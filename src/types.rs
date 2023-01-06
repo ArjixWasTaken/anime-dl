@@ -1,7 +1,8 @@
 #![allow(dead_code)]
 
-#[derive(Debug)]
-pub struct Provider {
-    pub name: &'static str,
-    pub base_url: &'static str,
+#[derive(Debug, Clone)]
+pub struct SearchResult {
+    pub title: String,
+    pub url: String,
+    pub provider: String,
 }

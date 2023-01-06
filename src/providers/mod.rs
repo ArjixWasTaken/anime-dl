@@ -1,18 +1,21 @@
 #![allow(non_upper_case_globals)]
 
-use crate::types::Provider;
+use reqwest::blocking::Client;
+
+use crate::types::SearchResult;
 mod animeonsen;
 
-pub fn search(provider_name: &str, query: &str) {
-    if let Some(result) = match provider_name {
-        "animeonsen" => Some(animeonsen::search(&query)),
+pub fn search(
+    client: &Client,
+    provider_name: &str,
+    query: &str,
+) -> Result<Vec<SearchResult>, String> {
+    let Some(ref result) = (match provider_name {
+        "animeonsen" => Some(animeonsen::search(client, &query)),
         _ => None,
-    } {
-        println!(
-            "[Search] [provider={}] [query=\"{}\"]: {:#?}",
-            provider_name, query, result
-        );
-    } else {
-        println!("No provider found with name: {}", provider_name);
-    }
+    }) else {
+        return Err("Provider not found.".into());
+    };
+
+    return Ok(result.clone());
 }
