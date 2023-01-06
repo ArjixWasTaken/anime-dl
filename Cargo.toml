@@ -1,0 +1,18 @@
+[package]
+name = "anime-dl"
+description = "A simple but powerful anime downloader and streamer."
+version = "0.1.0"
+authors = ["ArjixWasTaken"]
+autobins = false
+license = "MIT"
+
+[[bin]]
+name = "anime"
+path = "src/main.rs"
+
+[dependencies]
+clap = "2"
+term = "0.5"
+
+[build-dependencies]
+clap = "2"
