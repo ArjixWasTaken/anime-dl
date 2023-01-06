@@ -13,8 +13,7 @@ mod types;
 use crate::cmds::dl;
 
 fn main() {
-    let app = cli::build_cli();
-    let matches = app.get_matches();
+    let matches = cli::build_cli().get_matches();
 
     if let Some(args) = matches.subcommand_matches("dl") {
         dl::command(args);

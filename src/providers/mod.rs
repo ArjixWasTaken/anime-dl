@@ -3,8 +3,16 @@
 use crate::types::Provider;
 mod animeonsen;
 
-static providers: &'static [&'static Provider; 1] = &[&animeonsen::Provider];
-
-pub fn get_providers() -> &'static [&'static Provider] {
-    return providers;
+pub fn search(provider_name: &str, query: &str) {
+    if let Some(result) = match provider_name {
+        "animeonsen" => Some(animeonsen::search(&query)),
+        _ => None,
+    } {
+        println!(
+            "[Search] [provider={}] [query=\"{}\"]: {:#?}",
+            provider_name, query, result
+        );
+    } else {
+        println!("No provider found with name: {}", provider_name);
+    }
 }
