@@ -1,3 +1,4 @@
+#![allow(warnings)]
 #[macro_use]
 extern crate clap;
 extern crate term;

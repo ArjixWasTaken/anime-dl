@@ -2,8 +2,7 @@ use crate::types::Provider;
 
 pub static Provider: Provider = Provider {
     name: "AnimeOnsen",
-    description: "AnimeOnsen is a free anime streaming website.",
-    command: provider,
+    base_url: "AnimeOnsen is a free anime streaming website.",
 };
 
 pub fn provider() {
