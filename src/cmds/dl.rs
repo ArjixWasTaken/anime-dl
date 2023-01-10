@@ -8,6 +8,11 @@ pub fn command(client: &Client, args: &ArgMatches) -> i16 {
     let provider = args.value_of("provider").unwrap();
     let query = args.value_of("query").unwrap();
 
+    println!(
+        "Attempting to search for '{}' using the '{}' provider!",
+        query, provider
+    );
+
     let Ok(search_results) = providers::search(client, provider, query) else {
         return 1; // Error
     };
@@ -36,8 +41,6 @@ pub fn command(client: &Client, args: &ArgMatches) -> i16 {
     let chosen = search_results
         .get(input.trim().parse::<usize>().unwrap() - 1)
         .unwrap();
-
-    println!("You selected {:#?}\n", chosen);
 
     let episodes = providers::get_episodes(client, provider, chosen.url.as_str());
     println!("Episodes: {:#?}", episodes);

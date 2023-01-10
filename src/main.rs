@@ -7,6 +7,7 @@ extern crate reqwest;
 extern crate serde;
 extern crate serde_json;
 extern crate term;
+extern crate term_painter;
 
 mod cli;
 mod cmds;

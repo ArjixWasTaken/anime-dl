@@ -1,35 +1,12 @@
-use std::io::prelude::*;
-
-use term;
-
-// Some examples on how to use the term crate
+use term_painter::{
+    Color::{Green, Red},
+    ToStyle,
+};
 
 pub fn error(message: &str) {
-    if let Some(mut t) = term::stderr() {
-        match t.fg(term::color::BRIGHT_RED) {
-            Ok(_) => {
-                write!(t, "{}", message).unwrap();
-                t.reset().unwrap();
-            },
-            Err(_) => writeln!(t, "{}", message).unwrap()
-        };
-    } else {
-        eprint!("{}", message);
-    }
+    println!("{}", Red.paint(format!("[Error]: {}", message)));
 }
-
 
 pub fn success(message: &str) {
-    if let Some(mut t) = term::stdout() {
-        match t.fg(term::color::GREEN) {
-            Ok(_) => {
-                write!(t, "{}", message).unwrap();
-                t.reset().unwrap();
-            },
-            Err(_) => writeln!(t, "{}", message).unwrap()
-        };
-    } else {
-        eprint!("{}", message);
-    }
+    println!("{}", Green.paint(format!("[Success]: {}", message)));
 }
-
