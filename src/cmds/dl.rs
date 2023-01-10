@@ -39,7 +39,8 @@ pub fn command(client: &Client, args: &ArgMatches) -> i16 {
 
     println!("You selected {:#?}\n", chosen);
 
-    providers::get_episodes(client, provider, chosen.url.as_str());
+    let episodes = providers::get_episodes(client, provider, chosen.url.as_str());
+    println!("Episodes: {:#?}", episodes);
 
     return 0; // Ok
 }
