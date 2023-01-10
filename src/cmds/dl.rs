@@ -37,7 +37,9 @@ pub fn command(client: &Client, args: &ArgMatches) -> i16 {
         .get(input.trim().parse::<usize>().unwrap() - 1)
         .unwrap();
 
-    println!("You selected {:#?}", chosen);
+    println!("You selected {:#?}\n", chosen);
+
+    providers::get_episodes(client, provider, chosen.url.as_str());
 
     return 0; // Ok
 }

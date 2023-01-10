@@ -4,7 +4,7 @@ use reqwest::blocking::Client;
 use reqwest::header::AUTHORIZATION;
 use serde::{Deserialize, Serialize};
 
-use crate::types::SearchResult;
+use crate::types::{AnimeEpisode, SearchResult};
 
 const base_url: &str = "https://animeonsen.xyz";
 const authentication_header: &str =
@@ -30,7 +30,9 @@ pub struct Hit {
     pub content_id: Option<String>,
 }
 
-pub fn search(client: &Client, query: &str) -> Vec<SearchResult> {
+pub fn search(args: (&Client, &str)) -> Vec<SearchResult> {
+    let (client, query) = args;
+
     let mut json = HashMap::new();
     json.insert("q", query);
 
@@ -62,4 +64,16 @@ pub fn search(client: &Client, query: &str) -> Vec<SearchResult> {
             provider: "animeonsen".to_string(),
         })
         .collect::<Vec<SearchResult>>()
+}
+
+pub fn get_episodes(args: (&Client, &str)) -> Vec<AnimeEpisode> {
+    let (client, url) = args;
+
+    let Some(ref id) = regex::Regex::new(r#"animeonsen.xyz/details/(.+)/?"#).unwrap().captures(url) else {
+        return Vec::new();
+    };
+
+    println!("id! {:#?}", id);
+
+    return vec![];
 }
