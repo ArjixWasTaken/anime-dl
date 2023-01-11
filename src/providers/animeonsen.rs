@@ -92,22 +92,31 @@ pub fn get_episodes(args: (&Client, &str)) -> Vec<AnimeEpisode> {
         return Vec::new();
     };
 
-    let Ok(res) = client
-        .get(format!("https://api.{}/v4/content/{}/episodes", host, id.index(1)))
+    let res = client
+        .get(format!(
+            "https://api.{}/v4/content/{}/episodes",
+            host,
+            id.index(1)
+        ))
         .header(AUTHORIZATION, api_authentication_header)
-        .send()
+        .send();
+
+    let Ok(res) = res
     else {
+        crate::terminal::error(res.err().unwrap().to_string().as_str());
         return Vec::new();
     };
 
-    let Ok(ref json) = res.json::<EpisodesResponse>() else {
+    let json = res.json::<EpisodesResponse>();
+    let Ok(ref json) = json else {
+        crate::terminal::error(json.err().unwrap().to_string().as_str());
         return Vec::new();
     };
 
     let mut episodes = Vec::new();
 
     for (episode_number, episode) in json {
-        let episode_number = episode_number.parse::<i32>().unwrap();
+        let ep_num = episode_number.parse::<i32>().unwrap_or(-1);
         let title = episode.content_title_episode_en.clone().unwrap_or_else(|| {
             episode
                 .content_title_episode_jp
@@ -116,9 +125,14 @@ pub fn get_episodes(args: (&Client, &str)) -> Vec<AnimeEpisode> {
         });
 
         episodes.push(AnimeEpisode {
-            ep_num: episode_number,
+            ep_num,
             title,
-            url: format!("https://{}/watch/{}/{}", host, id.index(1), episode_number),
+            url: format!(
+                "https://{}/watch/{}?episode={}",
+                host,
+                id.index(1),
+                episode_number
+            ),
             provider: "animeonsen".to_string(),
         });
     }

@@ -23,7 +23,13 @@ fn main() {
     let matches = cli::build_cli().get_matches();
     let client = reqwest::blocking::Client::new();
 
+    unsafe {
+        crate::terminal::VERBOSITY = matches.occurrences_of("verbose");
+    }
+
     if let Some(args) = matches.subcommand_matches("dl") {
+        terminal::info("Executing the 'dl' subcommand.");
         dl::command(&client, args);
+        terminal::info("Finished the execution of the 'dl' subcommand.");
     }
 }
