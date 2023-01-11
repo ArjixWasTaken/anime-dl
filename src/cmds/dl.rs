@@ -85,5 +85,6 @@ pub async fn command(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -> i1
 
     // TODO: Download the episodes.
     println!("Episodes chosen: {:#?}", episodes);
+
     return 0; // Ok
 }

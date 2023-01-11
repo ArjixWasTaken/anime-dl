@@ -20,3 +20,4 @@ pub struct StreamLink {
     pub title: String,
     pub url: String,
 }
+

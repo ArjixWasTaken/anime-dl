@@ -133,7 +133,6 @@ pub async fn get_episodes(args: (&ClientWithMiddleware, &str)) -> Option<Vec<Ani
     }
 
     episodes.sort_by(|a, b| a.ep_num.partial_cmp(&b.ep_num).unwrap());
-
     Some(episodes)
 }
 
