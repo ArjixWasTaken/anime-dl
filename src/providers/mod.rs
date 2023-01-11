@@ -1,21 +1,43 @@
 #![allow(non_upper_case_globals)]
 
-use reqwest::blocking::Client;
-
-use crate::types::SearchResult;
+use crate::types::{AnimeEpisode, SearchResult};
+use reqwest::Client;
 mod animeonsen;
+use reqwest_middleware::ClientWithMiddleware;
 
-pub fn search(
-    client: &Client,
+macro_rules! provider_call {
+    ($provider_name:expr, $method:ident, $args:expr) => {
+        match $provider_name {
+            "animeonsen" => Some(animeonsen::$method($args).await?),
+            _ => None,
+        }
+    };
+}
+
+pub async fn search(
+    client: &ClientWithMiddleware,
     provider_name: &str,
     query: &str,
-) -> Result<Vec<SearchResult>, String> {
-    let Some(ref result) = (match provider_name {
-        "animeonsen" => Some(animeonsen::search(client, &query)),
-        _ => None,
-    }) else {
-        return Err("Provider not found.".into());
+) -> Option<Vec<SearchResult>> {
+    let Some(ref result) = provider_call!(provider_name, search, (client, &query)) else {
+        crate::terminal::error(format!("Provider '{}' not found", provider_name).as_str());
+        return None;
     };
 
-    return Ok(result.clone());
+    crate::terminal::success(format!("Executed '{}::search()'", provider_name).as_str());
+    return Some(result.clone());
+}
+
+pub async fn get_episodes(
+    client: &ClientWithMiddleware,
+    provider_name: &str,
+    anime_url: &str,
+) -> Option<Vec<AnimeEpisode>> {
+    let Some(ref result) = provider_call!(provider_name, get_episodes, (client, &anime_url)) else {
+        crate::terminal::error(format!("Provider '{}' not found", provider_name).as_str());
+        return None;
+    };
+
+    crate::terminal::success(format!("Executed '{}::get_episodes()'", provider_name).as_str());
+    return Some(result.clone());
 }

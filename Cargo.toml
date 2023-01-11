@@ -5,6 +5,7 @@ version = "0.1.0"
 authors = ["ArjixWasTaken"]
 autobins = false
 license = "MIT"
+edition = "2021"
 
 [[bin]]
 name = "anime"
@@ -13,11 +14,17 @@ path = "src/main.rs"
 [dependencies]
 clap = "2"
 term = "0.5"
-reqwest = { version = "0.11.13", features = [ "blocking", "json" ] }
+reqwest = { version = "0.11.13", features = [ "json" ] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 comfy-table = "6.1.4"
 casual = "0.2.0"
+regex = "1.7.0"
+term-painter = "0.3.0"
+tokio = { version = "1.0", features = ["full"] }
+reqwest-middleware = "0.2.0"
+reqwest-retry = "0.2.1"
+http-cache-reqwest = "0.5.2"
 
 [build-dependencies]
 clap = "2"
