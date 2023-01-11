@@ -3,7 +3,10 @@
 extern crate clap;
 extern crate casual;
 extern crate comfy_table;
+extern crate http_cache_reqwest;
 extern crate reqwest;
+extern crate reqwest_middleware;
+extern crate reqwest_retry;
 extern crate serde;
 extern crate serde_json;
 extern crate term;
@@ -18,11 +21,23 @@ mod types;
 mod utils;
 
 use crate::cmds::dl;
+use http_cache_reqwest::{CACacheManager, Cache, CacheMode, HttpCache};
+use reqwest_middleware::ClientBuilder;
+use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
 
 #[tokio::main]
 async fn main() {
     let matches = cli::build_cli().get_matches();
-    let client = reqwest::Client::new();
+
+    let retry_policy = ExponentialBackoff::builder().build_with_max_retries(3);
+    let client = ClientBuilder::new(reqwest::Client::new())
+        .with(RetryTransientMiddleware::new_with_policy(retry_policy))
+        .with(Cache(HttpCache {
+            mode: CacheMode::Default,
+            manager: CACacheManager::default(),
+            options: None,
+        }))
+        .build();
 
     unsafe {
         crate::terminal::VERBOSITY = matches.occurrences_of("verbose");

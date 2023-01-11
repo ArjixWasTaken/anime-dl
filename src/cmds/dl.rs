@@ -1,11 +1,11 @@
 use clap::ArgMatches;
-use reqwest::Client;
+use reqwest_middleware::ClientWithMiddleware;
 
 use crate::providers;
 use crate::types::SearchResult;
 use crate::utils::search_results_to_table;
 
-pub async fn command(client: &Client, args: &ArgMatches<'_>) -> i16 {
+pub async fn command(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -> i16 {
     let provider = args.value_of("provider").unwrap();
     let choice = args
         .value_of("choice")

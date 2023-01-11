@@ -3,6 +3,7 @@
 use crate::types::{AnimeEpisode, SearchResult};
 use reqwest::Client;
 mod animeonsen;
+use reqwest_middleware::ClientWithMiddleware;
 
 macro_rules! provider_call {
     ($provider_name:expr, $method:ident, $args:expr) => {
@@ -14,7 +15,7 @@ macro_rules! provider_call {
 }
 
 pub async fn search(
-    client: &Client,
+    client: &ClientWithMiddleware,
     provider_name: &str,
     query: &str,
 ) -> Option<Vec<SearchResult>> {
@@ -28,7 +29,7 @@ pub async fn search(
 }
 
 pub async fn get_episodes(
-    client: &Client,
+    client: &ClientWithMiddleware,
     provider_name: &str,
     anime_url: &str,
 ) -> Option<Vec<AnimeEpisode>> {

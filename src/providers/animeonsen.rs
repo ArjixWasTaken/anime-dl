@@ -2,6 +2,7 @@ use std::{collections::HashMap, ops::Index};
 
 use reqwest::header::AUTHORIZATION;
 use reqwest::Client;
+use reqwest_middleware::ClientWithMiddleware;
 use serde::{Deserialize, Serialize};
 
 use crate::types::{AnimeEpisode, SearchResult};
@@ -42,7 +43,7 @@ pub struct Episode {
     pub content_title_episode_jp: Option<String>,
 }
 
-pub async fn search(args: (&Client, &str)) -> Option<Vec<SearchResult>> {
+pub async fn search(args: (&ClientWithMiddleware, &str)) -> Option<Vec<SearchResult>> {
     let (client, query) = args;
 
     let mut json = HashMap::new();
@@ -84,7 +85,7 @@ pub async fn search(args: (&Client, &str)) -> Option<Vec<SearchResult>> {
     )
 }
 
-pub async fn get_episodes(args: (&Client, &str)) -> Option<Vec<AnimeEpisode>> {
+pub async fn get_episodes(args: (&ClientWithMiddleware, &str)) -> Option<Vec<AnimeEpisode>> {
     let (client, url) = args;
     let Ok(ref id_regex) = regex::Regex::new(r#"animeonsen.xyz/details/(.+)/?"#) else {
         return None;
