@@ -5,11 +5,12 @@ use reqwest::Client;
 use reqwest_middleware::ClientWithMiddleware;
 use serde::{Deserialize, Serialize};
 
-use crate::types::{AnimeEpisode, SearchResult};
+use crate::types::{AnimeEpisode, SearchResult, StreamLink};
 
 const host: &str = "animeonsen.xyz";
-const search_authentication_header: &str =
-    "Bearer 0e36d0275d16b40d7cf153634df78bc229320d073f565db2aaf6d027e0c30b13";
+
+#[rustfmt::skip]
+const search_authentication_header: &str = "Bearer 0e36d0275d16b40d7cf153634df78bc229320d073f565db2aaf6d027e0c30b13";
 const api_authentication_header: &str = "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImRlZmF1bHQifQ.eyJpc3MiOiJodHRwczovL2F1dGguYW5pbWVvbnNlbi54eXovIiwiYXVkIjoiaHR0cHM6Ly9hcGkuYW5pbWVvbnNlbi54eXoiLCJpYXQiOjE2NzI5NjY2NjAsImV4cCI6MTY3MzU3MTQ2MCwic3ViIjoiMDZkMjJiOTYtNjNlNy00NmE5LTgwZmMtZGM0NDFkNDFjMDM4LmNsaWVudCIsImF6cCI6IjA2ZDIyYjk2LTYzZTctNDZhOS04MGZjLWRjNDQxZDQxYzAzOCIsImd0eSI6ImNsaWVudF9jcmVkZW50aWFscyJ9.VH_BpA8HMr5-zymN-zDZJO6cI48D73gdJZ3vT5Iu5E_raCozl5JC3oBgnv84PYZO_lturlc2xrtC425_cSldUGGUF48LtcB5P29y0ryCtoAXamdEXctBIPuAQdJFYFANbaOK4WMTsPa1WZax0yiFPV_9DxurGwoOTiNKXUuqkPC0wLdD51zRoa0wizm9iaancbjKkr0xWqWxRGReVM9lLMP8leGVm6VSNqiRfnSiqphT7Zxur7S3oRju4GmeW7QiY1XRZmz8VhRtmxiFU5S65WGLpi8k84KfUZ44TLd3D9bbaOkg9lRTxm49YzsaFpGJxpaq9LOp3Iol43sekLj8hw";
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -132,6 +133,11 @@ pub async fn get_episodes(args: (&ClientWithMiddleware, &str)) -> Option<Vec<Ani
     }
 
     episodes.sort_by(|a, b| a.ep_num.partial_cmp(&b.ep_num).unwrap());
+    Some(episodes)
+}
 
-    return Some(episodes);
+pub async fn get_streams(args: (&ClientWithMiddleware, &str)) -> Option<Vec<StreamLink>> {
+    let (client, url) = args;
+
+    unreachable!("Not implemented yet, lol");
 }
