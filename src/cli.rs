@@ -18,8 +18,30 @@ pub fn build_cli() -> App<'static, 'static> {
             .arg(
                 Arg::with_name("provider")
                     .short("p")
-                    .help("the name of the provider")
+                    .help("the anime provider (website) for search.")
                     .default_value("animeonsen")
                     .possible_values(PROVIDERS),
+            )
+            .arg(
+                Arg::with_name("choice")
+                    .short("c")
+                    .help("choice to start downloading given anime number")
+                    .default_value("-1")
+                    .use_delimiter(false)
+                    .required(true),
+            )
+            .arg(
+                Arg::with_name("episode")
+                    .short("e")
+                    .help("the episode range to download")
+                    .default_value("1")
+                    .use_delimiter(false)
+                    .required(true),
             )])
+        .arg(
+            Arg::with_name("verbose")
+                .short("v")
+                .multiple(true)
+                .help("Sets the level of verbosity"),
+        )
 }
