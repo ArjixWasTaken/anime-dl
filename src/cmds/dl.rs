@@ -73,6 +73,17 @@ pub async fn command(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -> i1
         episodes.iter().map(|x| x.ep_num).max().unwrap_or(1),
     );
 
-    println!("Episodes chosen: {:?}", ep_range.unwrap());
+    let Ok(ep_range) = ep_range else {
+        crate::terminal::error("Could not parse --episode/-e");
+        return 1;
+    };
+
+    let episodes = episodes
+        .iter()
+        .filter(|x| ep_range.contains(&x.ep_num))
+        .collect::<Vec<_>>();
+
+    // TODO: Download the episodes.
+    println!("Episodes chosen: {:#?}", episodes);
     return 0; // Ok
 }

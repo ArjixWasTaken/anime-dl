@@ -5,7 +5,7 @@ use reqwest::Client;
 use reqwest_middleware::ClientWithMiddleware;
 use serde::{Deserialize, Serialize};
 
-use crate::types::{AnimeEpisode, SearchResult};
+use crate::types::{AnimeEpisode, SearchResult, StreamLink};
 
 const host: &str = "animeonsen.xyz";
 
@@ -134,5 +134,11 @@ pub async fn get_episodes(args: (&ClientWithMiddleware, &str)) -> Option<Vec<Ani
 
     episodes.sort_by(|a, b| a.ep_num.partial_cmp(&b.ep_num).unwrap());
 
-    return Some(episodes);
+    Some(episodes)
+}
+
+pub async fn get_streams(args: (&ClientWithMiddleware, &str)) -> Option<Vec<StreamLink>> {
+    let (client, url) = args;
+
+    unreachable!("Not implemented yet, lol");
 }
