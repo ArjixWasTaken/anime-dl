@@ -1,7 +1,7 @@
 use std::{collections::HashMap, ops::Index};
 
-use reqwest::blocking::Client;
 use reqwest::header::AUTHORIZATION;
+use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
 use crate::types::{AnimeEpisode, SearchResult};
@@ -42,54 +42,56 @@ pub struct Episode {
     pub content_title_episode_jp: Option<String>,
 }
 
-pub fn search(args: (&Client, &str)) -> Vec<SearchResult> {
+pub async fn search(args: (&Client, &str)) -> Option<Vec<SearchResult>> {
     let (client, query) = args;
 
     let mut json = HashMap::new();
     json.insert("q", query);
 
-    let Ok(res) = client
+    let res = client
         .post(format!("https://search.{}/indexes/content/search", host))
         .header(AUTHORIZATION, search_authentication_header)
         .json(&json)
-        .send() else {
+        .send().await.ok()? else {
             println!("Errored!");
-            return Vec::new();
+            return None;
         };
 
-    let Ok(ref json) = res.json::<SearchReponse>() else {
+    let json = res.json::<SearchReponse>().await.ok()? else {
             println!("Errored!");
-            return Vec::new();
+            return None;
         };
 
     if json.hits.is_none() {
-        return Vec::new();
+        return None;
     }
 
-    json.clone()
-        .hits
-        .unwrap()
-        .iter()
-        .map(|hit| SearchResult {
-            title: hit.content_title.clone().unwrap(),
-            url: format!(
-                "https://{}/details/{}",
-                host,
-                hit.content_id.clone().unwrap()
-            ),
-            provider: "animeonsen".to_string(),
-        })
-        .collect::<Vec<SearchResult>>()
+    Some(
+        json.clone()
+            .hits
+            .unwrap()
+            .iter()
+            .map(|hit| SearchResult {
+                title: hit.content_title.clone().unwrap(),
+                url: format!(
+                    "https://{}/details/{}",
+                    host,
+                    hit.content_id.clone().unwrap()
+                ),
+                provider: "animeonsen".to_string(),
+            })
+            .collect::<Vec<SearchResult>>(),
+    )
 }
 
-pub fn get_episodes(args: (&Client, &str)) -> Vec<AnimeEpisode> {
+pub async fn get_episodes(args: (&Client, &str)) -> Option<Vec<AnimeEpisode>> {
     let (client, url) = args;
     let Ok(ref id_regex) = regex::Regex::new(r#"animeonsen.xyz/details/(.+)/?"#) else {
-        return Vec::new();
+        return None;
     };
 
     let Some(ref id) = id_regex.captures(url) else {
-        return Vec::new();
+        return None;
     };
 
     let res = client
@@ -99,20 +101,11 @@ pub fn get_episodes(args: (&Client, &str)) -> Vec<AnimeEpisode> {
             id.index(1)
         ))
         .header(AUTHORIZATION, api_authentication_header)
-        .send();
+        .send()
+        .await
+        .ok()?;
 
-    let Ok(res) = res
-    else {
-        crate::terminal::error(res.err().unwrap().to_string().as_str());
-        return Vec::new();
-    };
-
-    let json = res.json::<EpisodesResponse>();
-    let Ok(ref json) = json else {
-        crate::terminal::error(json.err().unwrap().to_string().as_str());
-        return Vec::new();
-    };
-
+    let json = res.json::<EpisodesResponse>().await.ok()?;
     let mut episodes = Vec::new();
 
     for (episode_number, episode) in json {
@@ -139,5 +132,5 @@ pub fn get_episodes(args: (&Client, &str)) -> Vec<AnimeEpisode> {
 
     episodes.sort_by(|a, b| a.ep_num.partial_cmp(&b.ep_num).unwrap());
 
-    return episodes;
+    return Some(episodes);
 }

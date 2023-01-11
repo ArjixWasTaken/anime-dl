@@ -1,11 +1,11 @@
 use clap::ArgMatches;
-use reqwest::blocking::Client;
+use reqwest::Client;
 
 use crate::providers;
 use crate::types::SearchResult;
 use crate::utils::search_results_to_table;
 
-pub fn command(client: &Client, args: &ArgMatches) -> i16 {
+pub async fn command(client: &Client, args: &ArgMatches<'_>) -> i16 {
     let provider = args.value_of("provider").unwrap();
     let choice = args
         .value_of("choice")
@@ -23,7 +23,7 @@ pub fn command(client: &Client, args: &ArgMatches) -> i16 {
         .as_str(),
     );
 
-    let Ok(search_results) = providers::search(client, provider, query) else {
+    let Some(search_results) = providers::search(client, provider, query).await else {
         return 1; // Error
     };
 
@@ -63,7 +63,7 @@ pub fn command(client: &Client, args: &ArgMatches) -> i16 {
     }
 
     let episodes = providers::get_episodes(client, provider, chosen.url.as_str());
-    let Ok(episodes) = episodes else {
+    let Some(episodes) = episodes.await else {
         crate::terminal::error("Failed to get episodes!");
         return 1; // Error
     };

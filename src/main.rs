@@ -19,9 +19,10 @@ mod utils;
 
 use crate::cmds::dl;
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let matches = cli::build_cli().get_matches();
-    let client = reqwest::blocking::Client::new();
+    let client = reqwest::Client::new();
 
     unsafe {
         crate::terminal::VERBOSITY = matches.occurrences_of("verbose");
@@ -29,7 +30,7 @@ fn main() {
 
     if let Some(args) = matches.subcommand_matches("dl") {
         terminal::info("Executing the 'dl' subcommand.");
-        dl::command(&client, args);
+        dl::command(&client, args).await;
         terminal::info("Finished the execution of the 'dl' subcommand.");
     }
 }
