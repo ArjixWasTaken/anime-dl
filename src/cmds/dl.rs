@@ -13,6 +13,7 @@ pub fn command(client: &Client, args: &ArgMatches) -> i16 {
         .parse::<i32>()
         .unwrap();
     let query = args.value_of("query").unwrap();
+    let ep_range = args.value_of("episode").unwrap_or("1:");
 
     crate::terminal::info(
         format!(
@@ -62,7 +63,16 @@ pub fn command(client: &Client, args: &ArgMatches) -> i16 {
     }
 
     let episodes = providers::get_episodes(client, provider, chosen.url.as_str());
-    println!("Episodes: {:#?}", episodes);
+    let Ok(episodes) = episodes else {
+        crate::terminal::error("Failed to get episodes!");
+        return 1; // Error
+    };
 
+    let ep_range = crate::utils::parse_episode_range(
+        ep_range,
+        episodes.iter().map(|x| x.ep_num).max().unwrap_or(1),
+    );
+
+    println!("Episodes chosen: {:?}", ep_range.unwrap());
     return 0; // Ok
 }
