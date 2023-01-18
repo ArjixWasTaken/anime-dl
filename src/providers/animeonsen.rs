@@ -159,5 +159,98 @@ pub async fn get_episodes(args: (&ClientWithMiddleware, &str)) -> Option<Vec<Ani
 pub async fn get_streams(args: (&ClientWithMiddleware, &str)) -> Option<Vec<StreamLink>> {
     let (client, url) = args;
 
-    unreachable!("Not implemented yet, lol");
+    let Ok(ref id_regex) = regex::Regex::new(r#"animeonsen.xyz/watch/(.+?)\?episode=(\d+)"#) else {
+        return None;
+    };
+
+    let Some(ref id) = id_regex.captures(url) else {
+        return None;
+    };
+
+    let res = client
+        .get(format!(
+            "https://api.{}/v4/content/{}/video/{}",
+            host,
+            id.index(1),
+            id.index(2),
+        ))
+        .header(AUTHORIZATION, api_authentication_header)
+        .send()
+        .await
+        .ok()?;
+
+    let json = res.json::<VideoResponse>().await.ok()?;
+
+    Some(vec![StreamLink {
+        url: json.clone().uri?.stream?,
+        title: format!(
+            "{} - {} - {}",
+            json.clone().metadata?.content_title_en.unwrap_or(
+                json.clone()
+                    .metadata?
+                    .content_title
+                    .unwrap_or("N/A".to_string())
+            ),
+            id.index(2),
+            json.clone()
+                .metadata?
+                .episode?
+                .1
+                .content_title_episode_en
+                .unwrap_or(
+                    json.clone()
+                        .metadata?
+                        .episode?
+                        .1
+                        .content_title_episode_jp
+                        .unwrap_or("N/A".to_string())
+                )
+        )
+        .to_string(),
+        external_sub_url: json.clone().uri?.subtitles?.en_us?,
+    }])
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct VideoResponse {
+    pub metadata: Option<Metadata>,
+    pub uri: Option<Uri>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Metadata {
+    pub content_id: Option<String>,
+    pub content_title: Option<String>,
+    pub content_title_en: Option<String>,
+    pub data_type: Option<String>,
+    pub is_movie: Option<bool>,
+    pub subtitle_support: Option<bool>,
+    pub total_episodes: Option<i64>,
+    pub next_season: Option<String>,
+    pub mal_id: Option<i64>,
+    pub episode: Option<(i32, EpisodeClass, HashMap<String, EpisodeClass>)>,
+    pub subtitles: Option<Subtitles>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct EpisodeClass {
+    #[serde(rename = "contentTitle_episode_jp")]
+    pub content_title_episode_jp: Option<String>,
+    #[serde(rename = "contentTitle_episode_en")]
+    pub content_title_episode_en: Option<String>,
+}
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Subtitles {
+    #[serde(rename = "en-US")]
+    pub en_us: Option<String>,
+    #[serde(rename = "es-LA")]
+    pub es_la: Option<String>,
+    #[serde(rename = "pt-BR")]
+    pub pt_br: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Uri {
+    pub stream: Option<String>,
+    pub subtitles: Option<Subtitles>,
 }

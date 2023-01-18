@@ -1,9 +1,11 @@
 use comfy_table::presets::ASCII_FULL;
 use comfy_table::Table;
+use reqwest::header;
+use reqwest_middleware::ClientWithMiddleware;
 use std::collections::HashSet;
 use std::hash::Hash;
 
-use crate::types::SearchResult;
+use crate::types::{AnimeEpisode, SearchResult};
 
 pub fn search_results_to_table(search_results: &Vec<SearchResult>) -> Table {
     let mut table = Table::new();
@@ -77,4 +79,29 @@ pub fn dedup<T: Eq + Hash + Copy>(v: &mut Vec<T>) {
     // note the Copy constraint
     let mut uniques = HashSet::new();
     v.retain(|e| uniques.insert(*e));
+}
+
+pub async fn download_episodes(
+    client: &ClientWithMiddleware,
+    episodes: Vec<&AnimeEpisode>,
+) -> Option<()> {
+    let mut headers = header::HeaderMap::new();
+    headers.insert(
+        "Origin",
+        header::HeaderValue::from_str("https://www.animeonsen.xyz/").ok()?,
+    );
+    headers.insert(
+        "Referer",
+        header::HeaderValue::from_str("https://www.animeonsen.xyz/").ok()?,
+    );
+
+    for episode in episodes {
+        let streams =
+            crate::providers::get_streams(client, &episode.provider, episode.url.as_str()).await?;
+
+        println!("Streams! {:#?}", streams);
+        break;
+    }
+
+    Some(())
 }
