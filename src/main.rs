@@ -27,7 +27,8 @@ use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
 
 #[tokio::main]
 async fn main() {
-    let matches = cli::build_cli().get_matches();
+    let mut app = cli::build_cli();
+    let matches = app.clone().get_matches();
 
     let retry_policy = ExponentialBackoff::builder().build_with_max_retries(3);
     let client = ClientBuilder::new(reqwest::Client::new())
@@ -47,5 +48,8 @@ async fn main() {
         terminal::info("Executing the 'dl' subcommand.");
         dl::command(&client, args).await;
         terminal::info("Finished the execution of the 'dl' subcommand.");
+    } else {
+        app.print_help();
+        println!(""); // clap does not add a newline at the end for some reason...
     }
 }

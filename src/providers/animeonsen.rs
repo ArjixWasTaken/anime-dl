@@ -9,9 +9,29 @@ use crate::types::{AnimeEpisode, SearchResult, StreamLink};
 
 const host: &str = "animeonsen.xyz";
 
+// search token is a meta tag with the id 'ao-search-token'
+//-------------------------------
+// episodes token is a cookie named ao.session
+// https://www.animeonsen.xyz/assets/script/details.js?v=2.3.5
+
+// js de-obfuscated code on how to get it:
+/*
+let cookie = `; ${document.cookie}`.split(`; ao.session=`);
+cookie.length === 2 && cookie = decodeURIComponent(cookie.pop()?.split(";").shift() || "");
+
+Headers["Authorization"] = "Bearer ";
+Headers["Authorization"] += base64_decode_to_utf8(cookie)
+    .split("")
+    .reduce(
+        ((t,e) => t + String.fromCharCode(e.charCodeAt(0) + 1)),
+        ""
+    )
+*/
+// ------------------------------
+
 #[rustfmt::skip]
 const search_authentication_header: &str = "Bearer 0e36d0275d16b40d7cf153634df78bc229320d073f565db2aaf6d027e0c30b13";
-const api_authentication_header: &str = "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImRlZmF1bHQifQ.eyJpc3MiOiJodHRwczovL2F1dGguYW5pbWVvbnNlbi54eXovIiwiYXVkIjoiaHR0cHM6Ly9hcGkuYW5pbWVvbnNlbi54eXoiLCJpYXQiOjE2NzI5NjY2NjAsImV4cCI6MTY3MzU3MTQ2MCwic3ViIjoiMDZkMjJiOTYtNjNlNy00NmE5LTgwZmMtZGM0NDFkNDFjMDM4LmNsaWVudCIsImF6cCI6IjA2ZDIyYjk2LTYzZTctNDZhOS04MGZjLWRjNDQxZDQxYzAzOCIsImd0eSI6ImNsaWVudF9jcmVkZW50aWFscyJ9.VH_BpA8HMr5-zymN-zDZJO6cI48D73gdJZ3vT5Iu5E_raCozl5JC3oBgnv84PYZO_lturlc2xrtC425_cSldUGGUF48LtcB5P29y0ryCtoAXamdEXctBIPuAQdJFYFANbaOK4WMTsPa1WZax0yiFPV_9DxurGwoOTiNKXUuqkPC0wLdD51zRoa0wizm9iaancbjKkr0xWqWxRGReVM9lLMP8leGVm6VSNqiRfnSiqphT7Zxur7S3oRju4GmeW7QiY1XRZmz8VhRtmxiFU5S65WGLpi8k84KfUZ44TLd3D9bbaOkg9lRTxm49YzsaFpGJxpaq9LOp3Iol43sekLj8hw";
+const api_authentication_header: &str = "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImRlZmF1bHQifQ.eyJpc3MiOiJodHRwczovL2F1dGguYW5pbWVvbnNlbi54eXovIiwiYXVkIjoiaHR0cHM6Ly9hcGkuYW5pbWVvbnNlbi54eXoiLCJpYXQiOjE2NzQwNDgzMDAsImV4cCI6MTY3NDY1MzEwMCwic3ViIjoiMDZkMjJiOTYtNjNlNy00NmE5LTgwZmMtZGM0NDFkNDFjMDM4LmNsaWVudCIsImF6cCI6IjA2ZDIyYjk2LTYzZTctNDZhOS04MGZjLWRjNDQxZDQxYzAzOCIsImd0eSI6ImNsaWVudF9jcmVkZW50aWFscyJ9.QjWtxXbWWQLrupXKwXNPR11fQddUauO-cXFMsxISBpcSXxbsFpwZTqmJrT8nbF9ZsxGPCGOX6AqzupGHY66SCP_vf01XpKi-8yxvb_jfcwW4-DA8IWh-bar1zpgyaVScCv1bh91OlLTulxAIkg0W_jfbEh6JYhMTZWBy1b7i-UONX4E-4vblhu3R9CGw2_pbF74IlPDDAPmHHsAF67O9Nx7TarQdvcUwCRzHFmyzyxa_3oZ4Hb_9LeUstINMWi0CM_jursyX4cw-t6XlPOdg41ii4VWHwk0zfQNzSiAPfhLn7tdFrLvYo1ap1MEx60dsS5kWVaJp36AJTjipObqKlQ";
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SearchReponse {

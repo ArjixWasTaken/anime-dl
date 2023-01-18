@@ -27,6 +27,7 @@ dependencies = [
  "casual",
  "clap",
  "comfy-table",
+ "cruet",
  "http-cache-reqwest",
  "regex",
  "reqwest",
@@ -498,6 +499,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2ae1b35a484aa10e07fe0638d02301c5ad24de82d310ccbd2f3693da5f09bf1c"
 dependencies = [
  "winapi",
+]
+
+[[package]]
+name = "cruet"
+version = "0.13.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4e0d174765c7d11eb16f70a4213583aac2ca5ae1ebd1e233c6d5104bfb70fce3"
+dependencies = [
+ "once_cell",
+ "regex",
 ]
 
 [[package]]

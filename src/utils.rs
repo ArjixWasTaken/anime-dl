@@ -61,9 +61,7 @@ pub fn parse_episode_range(episode_range: &str, latest_ep: i32) -> Result<Vec<i3
                 }
             }
             _ => {
-                crate::terminal::error(
-                    format!("{:?} is not a valid episode range!", range).as_str(),
-                );
+                crate::terminal::error(format!("{:?} is not a valid episode range!", range));
                 continue;
             }
         }

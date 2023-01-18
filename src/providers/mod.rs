@@ -12,11 +12,11 @@ macro_rules! provider_api {
                 "animeonsen" => Some(animeonsen::$method((client, &$value)).await?),
                 _ => None,
             }) else {
-                crate::terminal::error(format!("Provider '{}' not found", provider_name).as_str());
+                crate::terminal::error(format!("Provider '{}' not found", provider_name));
                 return None;
             };
 
-            crate::terminal::success(format!("Executed '{}::{}()'", provider_name, stringify!($method)).as_str());
+            crate::terminal::success(format!("Executed '{}::{}()'", provider_name, stringify!($method)));
             return Some(result.clone());
         }
     };

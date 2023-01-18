@@ -34,7 +34,7 @@ pub fn build_cli() -> App<'static, 'static> {
                 Arg::with_name("episode")
                     .short("e")
                     .help("the episode range to download")
-                    .default_value("1")
+                    .default_value("1:")
                     .use_delimiter(false)
                     .required(true),
             )])
