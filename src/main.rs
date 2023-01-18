@@ -49,6 +49,6 @@ async fn main() {
         terminal::info("Finished the execution of the 'dl' subcommand.");
     } else {
         app.print_help();
-        println!(""); // clap does not add a newline at the end for some reason...
+        print!("\n"); // clap does not add a newline at the end for some reason...
     }
 }
