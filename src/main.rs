@@ -14,7 +14,6 @@ extern crate term_painter;
 
 mod cli;
 mod cmds;
-mod errors;
 mod providers;
 mod terminal;
 mod types;
