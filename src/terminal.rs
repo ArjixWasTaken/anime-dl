@@ -26,7 +26,7 @@ macro_rules! decl_log {
     };
 }
 
+decl_log!(error, Red, 0);
 decl_log!(info, White, 1);
-decl_log!(debug, Yellow, 3);
-decl_log!(error, Red, 2);
 decl_log!(success, Green, 2);
+decl_log!(debug, Yellow, 3);
