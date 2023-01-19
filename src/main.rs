@@ -44,9 +44,9 @@ async fn main() {
     }
 
     if let Some(args) = matches.subcommand_matches("dl") {
-        terminal::info("Executing the 'dl' subcommand.");
+        terminal::debug("Executing the 'dl' subcommand.");
         dl::command(&client, args).await;
-        terminal::info("Finished the execution of the 'dl' subcommand.");
+        terminal::debug("Finished the execution of the 'dl' subcommand.");
     } else {
         app.print_help();
         print!("\n"); // clap does not add a newline at the end for some reason...

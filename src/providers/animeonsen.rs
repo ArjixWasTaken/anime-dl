@@ -4,6 +4,7 @@ use reqwest::header::AUTHORIZATION;
 use reqwest::Client;
 use reqwest_middleware::ClientWithMiddleware;
 use serde::{Deserialize, Serialize};
+use scraper::{Html, Selector};
 
 use crate::types::{AnimeEpisode, SearchResult, StreamLink};
 
@@ -33,36 +34,19 @@ Headers["Authorization"] += base64_decode_to_utf8(cookie)
 const search_authentication_header: &str = "Bearer 0e36d0275d16b40d7cf153634df78bc229320d073f565db2aaf6d027e0c30b13";
 const api_authentication_header: &str = "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImRlZmF1bHQifQ.eyJpc3MiOiJodHRwczovL2F1dGguYW5pbWVvbnNlbi54eXovIiwiYXVkIjoiaHR0cHM6Ly9hcGkuYW5pbWVvbnNlbi54eXoiLCJpYXQiOjE2NzQwNDgzMDAsImV4cCI6MTY3NDY1MzEwMCwic3ViIjoiMDZkMjJiOTYtNjNlNy00NmE5LTgwZmMtZGM0NDFkNDFjMDM4LmNsaWVudCIsImF6cCI6IjA2ZDIyYjk2LTYzZTctNDZhOS04MGZjLWRjNDQxZDQxYzAzOCIsImd0eSI6ImNsaWVudF9jcmVkZW50aWFscyJ9.QjWtxXbWWQLrupXKwXNPR11fQddUauO-cXFMsxISBpcSXxbsFpwZTqmJrT8nbF9ZsxGPCGOX6AqzupGHY66SCP_vf01XpKi-8yxvb_jfcwW4-DA8IWh-bar1zpgyaVScCv1bh91OlLTulxAIkg0W_jfbEh6JYhMTZWBy1b7i-UONX4E-4vblhu3R9CGw2_pbF74IlPDDAPmHHsAF67O9Nx7TarQdvcUwCRzHFmyzyxa_3oZ4Hb_9LeUstINMWi0CM_jursyX4cw-t6XlPOdg41ii4VWHwk0zfQNzSiAPfhLn7tdFrLvYo1ap1MEx60dsS5kWVaJp36AJTjipObqKlQ";
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct SearchReponse {
-    pub hits: Option<Vec<Hit>>,
-    #[serde(rename = "estimatedTotalHits")]
-    pub estimated_total_hits: Option<i64>,
-    pub query: Option<String>,
-    pub limit: Option<i64>,
-    pub offset: Option<i64>,
-    #[serde(rename = "processingTimeMs")]
-    pub processing_time_ms: Option<i64>,
+
+// Since all network calls are cached, we don't care about caching the individual tokens.
+async fn get_search_token(client: &ClientWithMiddleware) -> Option<&str> {
+    let res = client.get(format!("https://www.{}", host)).send().await.ok()?.text().await.ok()?;
+    let html = Html::parse_document(res.as_str());
+    let selector = Selector::parse("#ao-search-token").unwrap();
+
+    // TODO: Fix this
+    println!("{:#?}", html.select(&selector).collect::<Vec<_>>());
+
+    Some("")
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct Hit {
-    pub content_title: Option<String>,
-    pub content_title_en: Option<String>,
-    pub content_title_jp: Option<String>,
-    pub content_id: Option<String>,
-}
-
-pub type EpisodeNumber = String;
-pub type EpisodesResponse = HashMap<EpisodeNumber, Episode>;
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Episode {
-    #[serde(rename = "contentTitle_episode_en")]
-    pub content_title_episode_en: Option<String>,
-    #[serde(rename = "contentTitle_episode_jp")]
-    pub content_title_episode_jp: Option<String>,
-}
 
 pub async fn search(args: (&ClientWithMiddleware, &str)) -> Option<Vec<SearchResult>> {
     let (client, query) = args;
@@ -105,6 +89,38 @@ pub async fn search(args: (&ClientWithMiddleware, &str)) -> Option<Vec<SearchRes
             .collect::<Vec<SearchResult>>(),
     )
 }
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct SearchReponse {
+    pub hits: Option<Vec<Hit>>,
+    #[serde(rename = "estimatedTotalHits")]
+    pub estimated_total_hits: Option<i64>,
+    pub query: Option<String>,
+    pub limit: Option<i64>,
+    pub offset: Option<i64>,
+    #[serde(rename = "processingTimeMs")]
+    pub processing_time_ms: Option<i64>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Hit {
+    pub content_title: Option<String>,
+    pub content_title_en: Option<String>,
+    pub content_title_jp: Option<String>,
+    pub content_id: Option<String>,
+}
+
+pub type EpisodeNumber = String;
+pub type EpisodesResponse = HashMap<EpisodeNumber, Episode>;
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Episode {
+    #[serde(rename = "contentTitle_episode_en")]
+    pub content_title_episode_en: Option<String>,
+    #[serde(rename = "contentTitle_episode_jp")]
+    pub content_title_episode_jp: Option<String>,
+}
+
 
 pub async fn get_episodes(args: (&ClientWithMiddleware, &str)) -> Option<Vec<AnimeEpisode>> {
     let (client, url) = args;

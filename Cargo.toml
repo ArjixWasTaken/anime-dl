@@ -26,6 +26,7 @@ reqwest-middleware = "0.2.0"
 reqwest-retry = "0.2.1"
 http-cache-reqwest = "0.5.2"
 cruet = "0.13.2"
+scraper = "0.14.0"
 
 [build-dependencies]
 clap = "2"
