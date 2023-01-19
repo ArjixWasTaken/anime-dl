@@ -24,21 +24,25 @@ macro_rules! provider_api {
             crate::terminal::debug(format!("Attempting to execute '{}'", call_expr_repr));
 
             let Some(ref result) = (match provider_name {
-                        "animeonsen" => Some(animeonsen::$method((client, &$value)).await?),
-                        _ => None,
-                    }) else {
-                        crate::terminal::error(
-                            format!(
-                                "Failed to execute '{}', cause: Provider '{}' not found!",
-                                call_expr_repr,
-                                provider_name
-                            )
-                        );
-                        return None;
-                    };
+                                "animeonsen" => Some(animeonsen::$method((client, &$value)).await),
+                                _ => None,
+                            }) else {
+                                crate::terminal::error(
+                                    format!(
+                                        "Failed to execute '{}', cause: Provider '{}' not found!",
+                                        call_expr_repr,
+                                        provider_name
+                                    )
+                                );
+                                return None;
+                            };
 
-            crate::terminal::debug(format!("Successfully executed '{}'", call_expr_repr));
-            return Some(result.clone());
+            match result.clone() {
+                Some(_) => crate::terminal::debug(format!("Successfully executed '{}'", call_expr_repr)),
+                None => crate::terminal::error(format!("Failed to execute '{}'", call_expr_repr)),
+            }
+
+            return result.clone();
         }
     };
 }

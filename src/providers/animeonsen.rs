@@ -3,68 +3,83 @@ use std::{collections::HashMap, ops::Index};
 use reqwest::header::AUTHORIZATION;
 use reqwest::Client;
 use reqwest_middleware::ClientWithMiddleware;
-use serde::{Deserialize, Serialize};
 use scraper::{Html, Selector};
+use serde::{Deserialize, Serialize};
 
 use crate::types::{AnimeEpisode, SearchResult, StreamLink};
 
 const host: &str = "animeonsen.xyz";
 
-// search token is a meta tag with the id 'ao-search-token'
-//-------------------------------
-// episodes token is a cookie named ao.session
-// https://www.animeonsen.xyz/assets/script/details.js?v=2.3.5
-
-// js de-obfuscated code on how to get it:
+// python code on how to get the api token:
 /*
-let cookie = `; ${document.cookie}`.split(`; ao.session=`);
-cookie.length === 2 && cookie = decodeURIComponent(cookie.pop()?.split(";").shift() || "");
+import httpx
+import base64
+import urllib.parse
 
-Headers["Authorization"] = "Bearer ";
-Headers["Authorization"] += base64_decode_to_utf8(cookie)
-    .split("")
-    .reduce(
-        ((t,e) => t + String.fromCharCode(e.charCodeAt(0) + 1)),
-        ""
-    )
-*/
-// ------------------------------
-
-#[rustfmt::skip]
-const search_authentication_header: &str = "Bearer 0e36d0275d16b40d7cf153634df78bc229320d073f565db2aaf6d027e0c30b13";
-const api_authentication_header: &str = "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImRlZmF1bHQifQ.eyJpc3MiOiJodHRwczovL2F1dGguYW5pbWVvbnNlbi54eXovIiwiYXVkIjoiaHR0cHM6Ly9hcGkuYW5pbWVvbnNlbi54eXoiLCJpYXQiOjE2NzQwNDgzMDAsImV4cCI6MTY3NDY1MzEwMCwic3ViIjoiMDZkMjJiOTYtNjNlNy00NmE5LTgwZmMtZGM0NDFkNDFjMDM4LmNsaWVudCIsImF6cCI6IjA2ZDIyYjk2LTYzZTctNDZhOS04MGZjLWRjNDQxZDQxYzAzOCIsImd0eSI6ImNsaWVudF9jcmVkZW50aWFscyJ9.QjWtxXbWWQLrupXKwXNPR11fQddUauO-cXFMsxISBpcSXxbsFpwZTqmJrT8nbF9ZsxGPCGOX6AqzupGHY66SCP_vf01XpKi-8yxvb_jfcwW4-DA8IWh-bar1zpgyaVScCv1bh91OlLTulxAIkg0W_jfbEh6JYhMTZWBy1b7i-UONX4E-4vblhu3R9CGw2_pbF74IlPDDAPmHHsAF67O9Nx7TarQdvcUwCRzHFmyzyxa_3oZ4Hb_9LeUstINMWi0CM_jursyX4cw-t6XlPOdg41ii4VWHwk0zfQNzSiAPfhLn7tdFrLvYo1ap1MEx60dsS5kWVaJp36AJTjipObqKlQ";
-
-
-// Since all network calls are cached, we don't care about caching the individual tokens.
-async fn get_search_token(client: &ClientWithMiddleware) -> Option<&str> {
-    let res = client.get(format!("https://www.{}", host)).send().await.ok()?.text().await.ok()?;
-    let html = Html::parse_document(res.as_str());
-    let selector = Selector::parse("#ao-search-token").unwrap();
-
-    // TODO: Fix this
-    println!("{:#?}", html.select(&selector).collect::<Vec<_>>());
-
-    Some("")
+headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:108.0) Gecko/20100101 Firefox/108.0",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp",
+    "Accept-Language": "en-US,en;q=0.5",
+    "Upgrade-Insecure-Requests": "1",
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-User": "?1",
 }
 
+res = httpx.get("https://www.animeonsen.xyz/", headers=headers)
+
+cookie = urllib.parse.unquote(res.cookies.get("ao.session", ""))
+authorization = "Bearer "
+authorization += "".join(
+    [chr(ord(x) + 1) for x in base64.b64decode(cookie).decode("utf-8")]
+)
+
+print(authorization)
+*/
+
+#[rustfmt::skip]
+const api_authentication_header: &str = "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImRlZmF1bHQifQ.eyJpc3MiOiJodHRwczovL2F1dGguYW5pbWVvbnNlbi54eXovIiwiYXVkIjoiaHR0cHM6Ly9hcGkuYW5pbWVvbnNlbi54eXoiLCJpYXQiOjE2NzQwNDgzMDAsImV4cCI6MTY3NDY1MzEwMCwic3ViIjoiMDZkMjJiOTYtNjNlNy00NmE5LTgwZmMtZGM0NDFkNDFjMDM4LmNsaWVudCIsImF6cCI6IjA2ZDIyYjk2LTYzZTctNDZhOS04MGZjLWRjNDQxZDQxYzAzOCIsImd0eSI6ImNsaWVudF9jcmVkZW50aWFscyJ9.QjWtxXbWWQLrupXKwXNPR11fQddUauO-cXFMsxISBpcSXxbsFpwZTqmJrT8nbF9ZsxGPCGOX6AqzupGHY66SCP_vf01XpKi-8yxvb_jfcwW4-DA8IWh-bar1zpgyaVScCv1bh91OlLTulxAIkg0W_jfbEh6JYhMTZWBy1b7i-UONX4E-4vblhu3R9CGw2_pbF74IlPDDAPmHHsAF67O9Nx7TarQdvcUwCRzHFmyzyxa_3oZ4Hb_9LeUstINMWi0CM_jursyX4cw-t6XlPOdg41ii4VWHwk0zfQNzSiAPfhLn7tdFrLvYo1ap1MEx60dsS5kWVaJp36AJTjipObqKlQ";
+
+// Since all network calls are cached, we don't care about caching the individual tokens.
+pub async fn get_search_token(client: &ClientWithMiddleware) -> Option<String> {
+    let res = client
+        .get(format!("https://www.{}", host))
+        .send()
+        .await
+        .ok()?
+        .text()
+        .await
+        .ok()?;
+    let html = Html::parse_document(res.as_str());
+    let selector = Selector::parse("[name=\"ao-search-token\"]").unwrap();
+    let token = html.select(&selector).next()?.value().attr("content");
+
+    match token {
+        Some(token) => Some(format!("Bearer {}", token)),
+        None => None,
+    }
+}
 
 pub async fn search(args: (&ClientWithMiddleware, &str)) -> Option<Vec<SearchResult>> {
     let (client, query) = args;
+    let Some(token) = get_search_token(client).await else {
+        crate::terminal::error("Failed to retrieve the search token");
+        return None;
+    };
 
     let mut json = HashMap::new();
     json.insert("q", query);
 
     let res = client
         .post(format!("https://search.{}/indexes/content/search", host))
-        .header(AUTHORIZATION, search_authentication_header)
+        .header(AUTHORIZATION, token)
         .json(&json)
         .send().await.ok()? else {
-            println!("Errored!");
             return None;
         };
 
     let json = res.json::<SearchReponse>().await.ok()? else {
-            println!("Errored!");
             return None;
         };
 
@@ -120,7 +135,6 @@ pub struct Episode {
     #[serde(rename = "contentTitle_episode_jp")]
     pub content_title_episode_jp: Option<String>,
 }
-
 
 pub async fn get_episodes(args: (&ClientWithMiddleware, &str)) -> Option<Vec<AnimeEpisode>> {
     let (client, url) = args;
