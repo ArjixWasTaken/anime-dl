@@ -23,10 +23,6 @@ pub async fn search(args: (&ClientWithMiddleware, &str)) -> Option<Vec<SearchRes
         return None;
     };
 
-    for element in html.select(&selector) {
-        println!("{}", element.value().attr("href").unwrap());
-    }
-
     Some(
         html.select(&selector)
             .map(|element| SearchResult {
