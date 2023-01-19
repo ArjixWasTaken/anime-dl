@@ -15,11 +15,6 @@ pub async fn command(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -> i1
     let query = args.value_of("query").unwrap();
     let ep_range = args.value_of("episode").unwrap_or("1:");
 
-    crate::terminal::info(format!(
-        "Attempting to search for '{}' using the '{}' provider!",
-        query, provider
-    ));
-
     let Some(search_results) = providers::search(client, provider, query).await else {
         return 1; // Error
     };
@@ -36,6 +31,7 @@ pub async fn command(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -> i1
     if choice < 1 {
         println!("{}", search_results_to_table(&search_results).to_string());
         let mut input = "".to_string();
+        let mut first_loop = true;
 
         loop {
             if input.trim().len() >= 1 && input.trim().parse::<usize>().is_ok() {
@@ -43,13 +39,16 @@ pub async fn command(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -> i1
                 if idx > 0 && idx <= search_results.len() {
                     break;
                 }
+            }
 
+            if !first_loop {
                 println!(
                     "Please input a number within the range of 1-{}",
                     search_results.len()
                 );
             }
 
+            first_loop = false;
             input = casual::prompt("Select an anime [1]: ")
                 .default("1".to_string())
                 .get();
