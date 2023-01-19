@@ -1,6 +1,6 @@
 use clap::{App, Arg, SubCommand};
 
-pub const PROVIDERS: &'static [&'static str] = &["animeonsen"];
+pub const PROVIDERS: &'static [&'static str] = &["animeonsen", "yugen"];
 
 pub fn build_cli() -> App<'static, 'static> {
     App::new("anime")
