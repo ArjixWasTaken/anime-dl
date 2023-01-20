@@ -107,7 +107,6 @@ pub async fn command(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -> i1
             not_found_episodes
         ));
     }
-
     println!("Episodes chosen: {:#?}", episodes);
 
     return 0; // Ok
