@@ -3,6 +3,7 @@
 use crate::types::{AnimeEpisode, SearchResult, StreamLink};
 use reqwest::Client;
 mod animeonsen;
+mod yugen;
 use reqwest_middleware::ClientWithMiddleware;
 
 macro_rules! provider_api {
@@ -25,6 +26,7 @@ macro_rules! provider_api {
 
             let Some(ref result) = (match provider_name {
                                 "animeonsen" => Some(animeonsen::$method((client, &$value)).await),
+                                "yugen" => Some(yugen::$method((client, &$value)).await),
                                 _ => None,
                             }) else {
                                 crate::terminal::error(
