@@ -13,14 +13,17 @@ const host: &str = "yugen.to";
 
 pub async fn search(args: (&ClientWithMiddleware, &str)) -> Option<Vec<SearchResult>> {
     let (client, query) = args;
-    let res: String = client
-        .get(format!("https://{}/search/?q={}", host, query))
+    let query = [("q", query)];
+    let res = client
+        .get(format!("https://{}/search/", host))
+        .query(&query)
         .send()
         .await
         .ok()?
         .text()
         .await
         .ok()?;
+    
     let html = Html::parse_document(res.as_str());
     let selector: Selector = Selector::parse("[class=\"anime-meta\"]").unwrap();
     if (html.select(&selector).count() == 0) {
