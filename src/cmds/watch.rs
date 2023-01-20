@@ -15,14 +15,6 @@ pub async fn command(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -> i1
     let query = args.value_of("query").unwrap();
     let ep_range = args.value_of("episode").unwrap_or("1:");
 
-    crate::terminal::info(
-        format!(
-            "Attempting to search for '{}' using the '{}' provider!",
-            query, provider
-        )
-        .as_str(),
-    );
-
     let Some(search_results) = providers::search(client, provider, query).await else {
         return 1; // Error
     };
@@ -83,14 +75,10 @@ pub async fn command(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -> i1
         .filter(|x| ep_range.contains(&x.ep_num))
         .collect::<Vec<_>>();
 
-    // TODO: Download the episodes.
-    // println!("Episodes chosen: {:#?}", episodes);
-
     let mut streams = vec![];
     for episode in episodes {
         let Some(streams_) = providers::get_streams(client, provider, episode.url.as_str()).await else {
-            crate::terminal::error("Failed to get streams!");
-            return 1; // Error
+            continue;
         };
 
         streams.extend(streams_);

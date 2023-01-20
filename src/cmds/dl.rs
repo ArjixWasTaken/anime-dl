@@ -108,7 +108,6 @@ pub async fn command(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -> i1
         ));
     }
 
-    // crate::terminal::info();
     println!("Episodes chosen: {:#?}", episodes);
 
     return 0; // Ok

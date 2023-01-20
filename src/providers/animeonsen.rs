@@ -238,6 +238,7 @@ pub async fn get_streams(args: (&ClientWithMiddleware, &str)) -> Option<Vec<Stre
         )
         .to_string(),
         external_sub_url: json.clone().uri?.subtitles?.en_us?,
+        is_direct: true,
     }])
 }
 
