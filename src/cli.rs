@@ -49,7 +49,7 @@ pub fn build_cli() -> App<'static, 'static> {
                 Arg::with_name("provider")
                     .short("p")
                     .help("the anime provider (website) for search.")
-                    .default_value("yugen")
+                    .default_value(PROVIDERS.first().unwrap())
                     .possible_values(PROVIDERS),
             )
             .arg(
