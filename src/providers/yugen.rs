@@ -26,9 +26,6 @@ pub async fn search(args: (&ClientWithMiddleware, &str)) -> Option<Vec<SearchRes
     
     let html = Html::parse_document(res.as_str());
     let selector: Selector = Selector::parse("[class=\"anime-meta\"]").unwrap();
-    if (html.select(&selector).count() == 0) {
-        return None;
-    };
 
     Some(
         html.select(&selector)
@@ -53,12 +50,8 @@ pub async fn get_episodes(args: (&ClientWithMiddleware, &str)) -> Option<Vec<Ani
         .ok()?;
     let html = Html::parse_document(res.as_str());
     let selector: Selector = Selector::parse("[class=\"ep-card\"] a:nth-child(2)").unwrap();
-    if (html.select(&selector).count() == 0) {
-        return None;
-    };
 
     let re = Regex::new(r#"/watch/\d+/.*?/(\d+)/"#).unwrap();
-
     let mut episodes: Vec<AnimeEpisode> = Vec::new();
     for element in html.select(&selector) {
         let ep_num = re
@@ -98,10 +91,6 @@ pub async fn get_streams(args: (&ClientWithMiddleware, &str)) -> Option<Vec<Stre
 
     let html = Html::parse_document(res.as_str());
     let selector: Selector = Selector::parse("[id=\"main-embed\"]").unwrap();
-
-    if (html.select(&selector).count() == 0) {
-        return None;
-    };
 
     let re = Regex::new(r#"/e/(.*?)/"#).unwrap();
     let id = re
