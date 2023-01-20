@@ -2,7 +2,7 @@ use clap::ArgMatches;
 use reqwest_middleware::ClientWithMiddleware;
 
 use crate::providers;
-use crate::types::SearchResult;
+use crate::types::{SearchResult, StreamLink};
 use crate::utils::search_results_to_table;
 
 pub async fn command(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -> i16 {
@@ -75,13 +75,14 @@ pub async fn command(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -> i1
         .filter(|x| ep_range.contains(&x.ep_num))
         .collect::<Vec<_>>();
 
-    let mut streams = vec![];
+    // TODO: We should not gather all the episodes at once
+    let mut streams: Vec<Vec<StreamLink>> = Vec::new();
     for episode in episodes {
         let Some(streams_) = providers::get_streams(client, provider, episode.url.as_str()).await else {
             continue;
         };
 
-        streams.extend(streams_);
+        streams.push(streams_);
     }
 
     println!("Streams: {:#?}", streams);
