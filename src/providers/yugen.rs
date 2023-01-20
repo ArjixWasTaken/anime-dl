@@ -9,12 +9,12 @@ use serde_json::Value;
 
 use crate::types::{AnimeEpisode, SearchResult, StreamLink};
 
-const host: &str = "https://yugen.to";
+const host: &str = "yugen.to";
 
 pub async fn search(args: (&ClientWithMiddleware, &str)) -> Option<Vec<SearchResult>> {
     let (client, query) = args;
     let res: String = client
-        .get(format!("{}/search/?q={}", host, query))
+        .get(format!("https://{}/search/?q={}", host, query))
         .send()
         .await
         .ok()?
@@ -31,7 +31,7 @@ pub async fn search(args: (&ClientWithMiddleware, &str)) -> Option<Vec<SearchRes
         html.select(&selector)
             .map(|element| SearchResult {
                 title: element.value().attr("title").unwrap().to_string(),
-                url: format!("{}{}", host, element.value().attr("href").unwrap()),
+                url: format!("https://{}{}", host, element.value().attr("href").unwrap()),
                 provider: "yugen".to_string(),
             })
             .collect::<Vec<SearchResult>>(),
@@ -72,7 +72,7 @@ pub async fn get_episodes(args: (&ClientWithMiddleware, &str)) -> Option<Vec<Ani
                 .replacen(&format!("{} :", ep_num), "", 1)
                 .trim()
                 .to_string(),
-            url: format!("{}{}", host, element.value().attr("href").unwrap()),
+            url: format!("https://{}{}", host, element.value().attr("href").unwrap()),
             ep_num: ep_num,
             provider: "yugen".to_string(),
         });
@@ -107,7 +107,7 @@ pub async fn get_streams(args: (&ClientWithMiddleware, &str)) -> Option<Vec<Stre
         .as_str();
 
     let res = client
-        .post("https://yugen.to/api/embed/")
+        .post(format!("https://{}/api/embed/", host))
         .header("x-requested-with", "XMLHttpRequest")
         .form(&[("id", id), ("ac", "0")])
         .send()
