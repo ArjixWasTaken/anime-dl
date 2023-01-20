@@ -106,19 +106,42 @@ pub async fn get_streams(args: (&ClientWithMiddleware, &str)) -> Option<Vec<Stre
         .await
         .ok()?;
 
-    let json: Value = serde_json::from_str(&res.text().await.ok()?).unwrap();
+    let json = res.json::<Embed>().await.ok()?;
 
-    Some(
-        json["sources"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .map(|source| StreamLink {
-                title: source["name"].as_str().unwrap().to_string(),
-                // get the value from the first hls stream
-                url: json["hls"][0].as_str().unwrap().to_string(),
-                external_sub_url: "".to_string(),
-            })
-            .collect::<Vec<StreamLink>>(),
-    )
+    let mut streams = json
+        .sources?
+        .iter()
+        .map(|source| StreamLink {
+            title: source.name.clone().unwrap().to_string(),
+            url: source.src.clone().unwrap().to_string(),
+            external_sub_url: "".to_string(),
+            is_direct: false,
+        })
+        .collect::<Vec<StreamLink>>();
+
+    streams.extend(json.hls?.iter().map(|hls| StreamLink {
+        title: "HLS".to_string(),
+        url: hls.to_string(),
+        external_sub_url: "".to_string(),
+        is_direct: true,
+    }));
+
+    Some(streams)
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Embed {
+    pub message: Option<String>,
+    pub thumbnail: Option<String>,
+    pub multi: Option<Vec<Option<serde_json::Value>>>,
+    pub sources: Option<Vec<Source>>,
+    pub hls: Option<Vec<String>>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Source {
+    pub name: Option<String>,
+    pub src: Option<String>,
+    #[serde(rename = "type")]
+    pub source_type: Option<String>,
 }
