@@ -2,7 +2,7 @@ use clap::ArgMatches;
 use reqwest_middleware::ClientWithMiddleware;
 
 use crate::providers;
-use crate::types::SearchResult;
+use crate::types::{SearchResult, StreamLink};
 use crate::utils::search_results_to_table;
 
 pub async fn command(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -> i16 {
@@ -19,19 +19,11 @@ pub async fn command(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -> i1
         return 1; // Error
     };
 
-    if search_results.is_empty() {
-        crate::terminal::error(
-            "No anime was found using that query, try again with another provider or keyword!",
-        );
-        return 1; // Error
-    }
-
     let mut chosen: &SearchResult;
 
     if choice < 1 {
         println!("{}", search_results_to_table(&search_results).to_string());
         let mut input = "".to_string();
-        let mut first_loop = true;
 
         loop {
             if input.trim().len() >= 1 && input.trim().parse::<usize>().is_ok() {
@@ -39,16 +31,13 @@ pub async fn command(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -> i1
                 if idx > 0 && idx <= search_results.len() {
                     break;
                 }
-            }
 
-            if !first_loop {
                 println!(
                     "Please input a number within the range of 1-{}",
                     search_results.len()
                 );
             }
 
-            first_loop = false;
             input = casual::prompt("Select an anime [1]: ")
                 .default("1".to_string())
                 .get();
@@ -59,7 +48,7 @@ pub async fn command(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -> i1
             .unwrap();
     } else {
         if choice > search_results.len() as i32 {
-            crate::terminal::error(format!("--choice/-c with the value of {}, is more than the number of the available search results ({})", choice, search_results.len()));
+            crate::terminal::error(format!("--choice/-c with the value of {}, is more than the number of the available search results ({})", choice, search_results.len()).as_str());
             return 1; // Error
         }
         chosen = search_results.get((choice - 1) as usize).unwrap();
@@ -83,31 +72,20 @@ pub async fn command(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -> i1
 
     let episodes = episodes
         .iter()
-        .filter(|ep| ep_range.contains(&ep.ep_num))
+        .filter(|x| ep_range.contains(&x.ep_num))
         .collect::<Vec<_>>();
 
-    let not_found_episodes = ep_range
-        .iter()
-        .filter(|ep_num| !episodes.iter().any(|ep| ep.ep_num == **ep_num))
-        .collect::<Vec<_>>();
+    // TODO: We should not gather all the episodes at once
+    let mut streams: Vec<Vec<StreamLink>> = Vec::new();
+    for episode in episodes {
+        let Some(streams_) = providers::get_streams(client, provider, episode.url.as_str()).await else {
+            continue;
+        };
 
-    if episodes.is_empty() {
-        crate::terminal::error(format!(
-            "Couldn't find any of the queried episodes! ({})",
-            not_found_episodes
-                .iter()
-                .map(|x| x.to_string())
-                .collect::<Vec<_>>()
-                .join(", ")
-        ));
-        return 1;
-    } else if !not_found_episodes.is_empty() {
-        crate::terminal::error(format!(
-            "Couldn't find the following episodes: {:?}",
-            not_found_episodes
-        ));
+        streams.push(streams_);
     }
-    println!("Episodes chosen: {:#?}", episodes);
+
+    println!("Streams: {:#?}", streams);
 
     return 0; // Ok
 }

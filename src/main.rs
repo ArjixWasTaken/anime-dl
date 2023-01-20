@@ -14,7 +14,6 @@ extern crate term_painter;
 
 mod cli;
 mod cmds;
-mod errors;
 mod providers;
 mod terminal;
 mod types;
@@ -27,7 +26,8 @@ use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
 
 #[tokio::main]
 async fn main() {
-    let matches = cli::build_cli().get_matches();
+    let mut app = cli::build_cli();
+    let matches = app.clone().get_matches();
 
     let retry_policy = ExponentialBackoff::builder().build_with_max_retries(3);
     let client = ClientBuilder::new(reqwest::Client::new())
@@ -44,8 +44,15 @@ async fn main() {
     }
 
     if let Some(args) = matches.subcommand_matches("dl") {
-        terminal::info("Executing the 'dl' subcommand.");
+        terminal::debug("Executing the 'dl' subcommand.");
         dl::command(&client, args).await;
-        terminal::info("Finished the execution of the 'dl' subcommand.");
+        terminal::debug("Finished the execution of the 'dl' subcommand.");
+    } else if let Some(args) = matches.subcommand_matches("watch") {
+        terminal::debug("Executing the 'watch' subcommand.");
+        cmds::watch::command(&client, args).await;
+        terminal::debug("Finished the execution of the 'watch' subcommand.");
+    } else {
+        app.print_help();
+        print!("\n"); // clap does not add a newline at the end for some reason...
     }
 }

@@ -19,5 +19,6 @@ pub struct AnimeEpisode {
 pub struct StreamLink {
     pub title: String,
     pub url: String,
+    pub external_sub_url: String,
+    pub is_direct: bool,
 }
-

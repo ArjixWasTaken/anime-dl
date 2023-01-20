@@ -1,3 +1,4 @@
+use cruet::Inflector;
 use term_painter::{
     Color::{Green, Red, White, Yellow},
     ToStyle,
@@ -5,44 +6,27 @@ use term_painter::{
 
 pub static mut VERBOSITY: u64 = 1;
 
-pub fn error(message: &str) {
-    Red.with(|| {
-        println!("[Error]: {}", message);
-    });
-}
+macro_rules! decl_log {
+    ($level:ident, $color:ident, $debug_level:literal) => {
+        pub fn $level<S: AsRef<str>>(message: S) {
+            unsafe {
+                if VERBOSITY < $debug_level {
+                    return;
+                }
+            }
 
-pub fn success(message: &str) {
-    unsafe {
-        if VERBOSITY < 2 {
-            return;
+            $color.with(|| {
+                println!(
+                    "[{}]: {}",
+                    stringify!($level).to_title_case(),
+                    message.as_ref()
+                )
+            });
         }
-    }
-
-    Green.with(|| {
-        println!("[Success]: {}", message);
-    });
+    };
 }
 
-pub fn info(message: &str) {
-    unsafe {
-        if VERBOSITY < 1 {
-            return;
-        }
-    }
-
-    White.with(|| {
-        println!("[Info]: {}", message);
-    });
-}
-
-pub fn debug(message: &str) {
-    unsafe {
-        if VERBOSITY < 3 {
-            return;
-        }
-    }
-
-    Yellow.with(|| {
-        println!("[Debug]: {}", message);
-    });
-}
+decl_log!(error, Red, 0);
+decl_log!(info, White, 1);
+decl_log!(success, Green, 2);
+decl_log!(debug, Yellow, 3);
