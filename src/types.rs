@@ -18,10 +18,21 @@ pub struct AnimeEpisode {
 }
 
 #[derive(Debug, Clone)]
+pub enum Quality {
+    _4K,
+    _2K,
+    _1080p,
+    _720p,
+    _480p,
+    _360p,
+}
+
+#[derive(Debug, Clone)]
 pub struct StreamLink {
     pub title: String,
     pub url: String,
     pub is_direct: bool,
+    pub quality: Option<Quality>,
     pub headers: Option<Vec<(HeaderName, HeaderValue)>>,
 }
 
