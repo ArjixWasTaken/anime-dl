@@ -60,7 +60,8 @@ pub async fn command(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -> Re
             continue;
         };
 
-        streams.push(streams_);
+        // FIXME: This is only a temporary measure, until the watch command is properly implemented.
+        streams.push(streams_.0);
     }
 
     println!("Streams: {:#?}", streams);

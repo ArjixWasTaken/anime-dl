@@ -19,6 +19,17 @@ pub struct AnimeEpisode {
 pub struct StreamLink {
     pub title: String,
     pub url: String,
-    pub external_sub_url: String,
     pub is_direct: bool,
+}
+
+#[derive(Debug, Clone)]
+pub enum SubtitleSource {
+    Url(String),
+    File(String),
+}
+
+#[derive(Debug, Clone)]
+pub struct SubtitleTrack {
+    pub lang: Option<String>,
+    pub src: SubtitleSource,
 }

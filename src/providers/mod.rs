@@ -1,6 +1,6 @@
 #![allow(non_upper_case_globals)]
 
-use crate::types::{AnimeEpisode, SearchResult, StreamLink};
+use crate::types::{AnimeEpisode, SearchResult, StreamLink, SubtitleTrack};
 use reqwest::Client;
 mod animeonsen;
 mod yugen;
@@ -42,4 +42,4 @@ provider_api!(search, query, Vec<SearchResult>);
 #[rustfmt::skip]
 provider_api!(get_episodes, anime_url, Vec<AnimeEpisode>);
 #[rustfmt::skip]
-provider_api!(get_streams, episode_url, Vec<StreamLink>);
+provider_api!(get_streams, episode_url, (Vec<StreamLink>, Vec<SubtitleTrack>));
