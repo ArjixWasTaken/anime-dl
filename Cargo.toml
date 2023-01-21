@@ -28,6 +28,8 @@ http-cache-reqwest = "0.5.2"
 cruet = "0.13.2"
 scraper = "0.14.0"
 anyhow = "1.0.68"
+url = "2.3.1"
+async-recursion = "1.0.2"
 
 [build-dependencies]
 clap = "2"

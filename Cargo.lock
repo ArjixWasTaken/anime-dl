@@ -25,6 +25,7 @@ name = "anime-dl"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-recursion",
  "casual",
  "clap",
  "comfy-table",
@@ -40,6 +41,7 @@ dependencies = [
  "term 0.5.2",
  "term-painter",
  "tokio",
+ "url",
 ]
 
 [[package]]
@@ -155,6 +157,17 @@ dependencies = [
  "libc",
  "signal-hook",
  "windows-sys 0.42.0",
+]
+
+[[package]]
+name = "async-recursion"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3b015a331cc64ebd1774ba119538573603427eaace0a1950c423ab971f903796"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
