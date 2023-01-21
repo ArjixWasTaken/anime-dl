@@ -237,6 +237,7 @@ pub async fn get_streams(
         )
         .to_string(),
         is_direct: true,
+        headers: None,
     };
 
     let subs = json
@@ -255,6 +256,7 @@ pub async fn get_streams(
             .map(|x| SubtitleTrack {
                 src: SubtitleSource::Url(x.1.clone().unwrap()),
                 lang: Some(x.0.into()),
+                headers: None,
             })
             .collect::<Vec<_>>()
         })
