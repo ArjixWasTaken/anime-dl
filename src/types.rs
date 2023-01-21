@@ -1,5 +1,7 @@
 #![allow(dead_code)]
 
+use reqwest::header::{HeaderName, HeaderValue};
+
 #[derive(Debug, Clone)]
 pub struct SearchResult {
     pub title: String,
@@ -20,6 +22,7 @@ pub struct StreamLink {
     pub title: String,
     pub url: String,
     pub is_direct: bool,
+    pub headers: Option<Vec<(HeaderName, HeaderValue)>>,
 }
 
 #[derive(Debug, Clone)]
@@ -32,4 +35,5 @@ pub enum SubtitleSource {
 pub struct SubtitleTrack {
     pub lang: Option<String>,
     pub src: SubtitleSource,
+    pub headers: Option<Vec<(HeaderName, HeaderValue)>>,
 }
