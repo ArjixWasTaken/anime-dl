@@ -15,13 +15,14 @@ extern crate term_painter;
 
 mod cli;
 mod cmds;
-mod providers;
 mod extractors;
+mod providers;
 mod terminal;
 mod types;
 mod utils;
 
 use http_cache_reqwest::{CACacheManager, Cache, CacheMode, HttpCache};
+use reqwest::header::USER_AGENT;
 use reqwest_middleware::ClientBuilder;
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
 
@@ -46,7 +47,15 @@ async fn main() {
     let matches = app.clone().get_matches();
 
     let retry_policy = ExponentialBackoff::builder().build_with_max_retries(3);
-    let client = ClientBuilder::new(reqwest::Client::new())
+    let client = ClientBuilder::new(
+        reqwest::ClientBuilder::new()
+            .default_headers( reqwest::header::HeaderMap::from_iter(vec![(
+                USER_AGENT,
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36".parse().unwrap()
+            )])
+        )
+        .build().unwrap()
+    )
         .with(RetryTransientMiddleware::new_with_policy(retry_policy))
         .with(Cache(HttpCache {
             mode: CacheMode::Default,
