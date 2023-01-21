@@ -31,6 +31,28 @@ pub async fn command(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -> Re
         .filter(|x| ep_range.contains(&x.ep_num))
         .collect::<Vec<_>>();
 
+    let not_found_episodes = ep_range
+        .iter()
+        .filter(|ep_num| !episodes.iter().any(|ep| ep.ep_num == **ep_num))
+        .collect::<Vec<_>>();
+
+    if episodes.is_empty() {
+        crate::terminal::error(format!(
+            "Couldn't find any of the queried episodes! ({})",
+            not_found_episodes
+                .iter()
+                .map(|x| x.to_string())
+                .collect::<Vec<_>>()
+                .join(", ")
+        ));
+        return Ok(());
+    } else if !not_found_episodes.is_empty() {
+        crate::terminal::error(format!(
+            "Couldn't find the following episodes: {:?}",
+            not_found_episodes
+        ));
+    }
+
     // TODO: We should not gather all the episodes at once
     let mut streams: Vec<Vec<StreamLink>> = Vec::new();
     for episode in episodes {
