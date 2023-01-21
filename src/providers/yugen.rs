@@ -8,7 +8,7 @@ use scraper::{element_ref::Select, Html, Selector};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::types::{AnimeEpisode, SearchResult, StreamLink};
+use crate::types::{AnimeEpisode, SearchResult, StreamLink, SubtitleTrack};
 
 const host: &str = "yugen.to";
 
@@ -75,7 +75,9 @@ pub async fn get_episodes(args: (&ClientWithMiddleware, &str)) -> Result<Vec<Ani
     Ok(episodes)
 }
 
-pub async fn get_streams(args: (&ClientWithMiddleware, &str)) -> Result<Vec<StreamLink>> {
+pub async fn get_streams(
+    args: (&ClientWithMiddleware, &str),
+) -> Result<(Vec<StreamLink>, Vec<SubtitleTrack>)> {
     let (client, url) = args;
 
     let res: String = client.get(format!("{}", url)).send().await?.text().await?;
@@ -114,7 +116,6 @@ pub async fn get_streams(args: (&ClientWithMiddleware, &str)) -> Result<Vec<Stre
             streams.push(StreamLink {
                 title: source.name.clone().unwrap().to_string(),
                 url: source.src.clone().unwrap().to_string(),
-                external_sub_url: "".to_string(),
                 is_direct: false,
             })
         });
@@ -125,13 +126,12 @@ pub async fn get_streams(args: (&ClientWithMiddleware, &str)) -> Result<Vec<Stre
             streams.push(StreamLink {
                 title: "HLS".to_string(),
                 url: hls.to_string(),
-                external_sub_url: "".to_string(),
                 is_direct: true,
             });
         });
     });
 
-    Ok(streams)
+    Ok((streams, vec![]))
 }
 
 #[derive(Debug, Serialize, Deserialize)]

@@ -7,7 +7,7 @@ use reqwest_middleware::ClientWithMiddleware;
 use scraper::{Html, Selector};
 use serde::{Deserialize, Serialize};
 
-use crate::types::{AnimeEpisode, SearchResult, StreamLink};
+use crate::types::{AnimeEpisode, SearchResult, StreamLink, SubtitleSource, SubtitleTrack};
 
 const host: &str = "animeonsen.xyz";
 
@@ -181,7 +181,9 @@ pub async fn get_episodes(args: (&ClientWithMiddleware, &str)) -> Result<Vec<Ani
     Ok(episodes)
 }
 
-pub async fn get_streams(args: (&ClientWithMiddleware, &str)) -> Result<Vec<StreamLink>> {
+pub async fn get_streams(
+    args: (&ClientWithMiddleware, &str),
+) -> Result<(Vec<StreamLink>, Vec<SubtitleTrack>)> {
     let (client, url) = args;
 
     let id_regex = regex::Regex::new(r#"animeonsen.xyz/watch/(.+?)\?episode=(\d+)"#)?;
@@ -203,7 +205,7 @@ pub async fn get_streams(args: (&ClientWithMiddleware, &str)) -> Result<Vec<Stre
 
     let json = res.json::<VideoResponse>().await?;
 
-    Ok(vec![StreamLink {
+    let stream = StreamLink {
         url: json.clone().uri.unwrap().stream.unwrap(),
         title: format!(
             "{} - {} - {}",
@@ -234,9 +236,31 @@ pub async fn get_streams(args: (&ClientWithMiddleware, &str)) -> Result<Vec<Stre
                 )
         )
         .to_string(),
-        external_sub_url: json.clone().uri.unwrap().subtitles.unwrap().en_us.unwrap(),
         is_direct: true,
-    }])
+    };
+
+    let subs = json
+        .clone()
+        .metadata
+        .unwrap()
+        .subtitles
+        .map(|subtitles| {
+            vec![
+                ("en_us", subtitles.en_us),
+                ("es_la", subtitles.es_la),
+                ("pt_br", subtitles.pt_br),
+            ]
+            .iter()
+            .filter(|x| x.1.is_some())
+            .map(|x| SubtitleTrack {
+                src: SubtitleSource::Url(x.1.clone().unwrap()),
+                lang: Some(x.0.into()),
+            })
+            .collect::<Vec<_>>()
+        })
+        .unwrap_or_default();
+
+    Ok((vec![stream], subs))
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
