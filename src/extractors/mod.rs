@@ -4,7 +4,8 @@ use reqwest::Client;
 use reqwest_middleware::ClientWithMiddleware;
 use url::Url;
 
-mod goload;
+mod streamsb;
+mod vidstream;
 
 #[async_recursion]
 pub async fn unpack_streams(
@@ -26,7 +27,13 @@ pub async fn unpack_streams(
         let hostname = hostname.to_string();
 
         let (streams_, subs_) = match hostname.as_str() {
-            "goload.pro" => goload::unpack(client, stream).await,
+            "goload.pro" | "gogohd.pro" | "gogo-stream.com" => {
+                vidstream::unpack(client, url, stream).await
+            }
+            "sbspeed.com" | "streamsss.net" | "sbflix.xyz" | "vidgomunime.xyz" | "sbthe.com"
+            | "ssbstream.net" | "sbfull.com" | "sbplay1.com" | "sbplay2.com" | "sbplay3.com"
+            | "cloudemb.com" | "sbplay.org" | "embedsb.com" | "sbplay.one" | "pelistop.co"
+            | "sbplay2.xyz" | "streamsb.net" => streamsb::unpack(client, url, stream).await,
             _ => (vec![], vec![]),
         };
 
