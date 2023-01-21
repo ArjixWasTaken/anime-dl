@@ -58,8 +58,10 @@ pub async fn command(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -> Re
             continue;
         };
 
-        let streams = crate::extractors::unpack_streams(client, streams).await;
+        let (streams, subtitles) =
+            crate::extractors::unpack_streams(client, streams, subtitles).await;
         println!("Streams for episode {}: {:#?}", episode.ep_num, streams);
+        println!("Subtitles for episode {}: {:#?}", episode.ep_num, subtitles);
     }
 
     Ok(())
