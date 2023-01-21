@@ -20,10 +20,24 @@ mod terminal;
 mod types;
 mod utils;
 
-use crate::cmds::dl;
 use http_cache_reqwest::{CACacheManager, Cache, CacheMode, HttpCache};
 use reqwest_middleware::ClientBuilder;
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
+
+macro_rules! try_cmd {
+    ($cmd:ident, $matches:ident, $client:ident) => {
+        if let Some(args) = $matches.subcommand_matches(stringify!($cmd)) {
+            let cmd_str = stringify!($cmd);
+            crate::terminal::debug(format!("Executing the '{}' subcommand.", cmd_str));
+            crate::cmds::$cmd::command(&$client, args).await.unwrap();
+            crate::terminal::debug(format!(
+                "Finished the execution of the '{}' subcommand.",
+                cmd_str
+            ));
+            return;
+        }
+    };
+}
 
 #[tokio::main]
 async fn main() {
@@ -44,16 +58,10 @@ async fn main() {
         crate::terminal::VERBOSITY = matches.occurrences_of("verbose");
     }
 
-    if let Some(args) = matches.subcommand_matches("dl") {
-        terminal::debug("Executing the 'dl' subcommand.");
-        dl::command(&client, args).await.unwrap();
-        terminal::debug("Finished the execution of the 'dl' subcommand.");
-    } else if let Some(args) = matches.subcommand_matches("watch") {
-        terminal::debug("Executing the 'watch' subcommand.");
-        cmds::watch::command(&client, args).await.unwrap();
-        terminal::debug("Finished the execution of the 'watch' subcommand.");
-    } else {
-        app.print_help();
-        print!("\n"); // clap does not add a newline at the end for some reason...
-    }
+    try_cmd!(dl, matches, client);
+    try_cmd!(watch, matches, client);
+
+    // If no subcommand was matched, print the help message
+    app.print_help();
+    println!(); // clap does not add a newline at the end for some reason...
 }
