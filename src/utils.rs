@@ -5,6 +5,7 @@ use reqwest::header;
 use reqwest_middleware::ClientWithMiddleware;
 use std::collections::HashSet;
 use std::hash::Hash;
+use term_painter::{Attr::Plain, ToStyle};
 
 use crate::types::{AnimeEpisode, SearchResult};
 
@@ -63,6 +64,8 @@ pub fn user_select_result(search_results: Vec<SearchResult>, choice: i32) -> Res
         chosen = search_results
             .get(input.trim().parse::<usize>().unwrap() - 1)
             .unwrap();
+
+        println!("Selected: {}", Plain.bold().paint(chosen.title.clone()));
     } else {
         if choice > search_results.len() as i32 {
             crate::terminal::error(format!("--choice/-c with the value of {}, is more than the number of the available search results ({})", choice, search_results.len()));
