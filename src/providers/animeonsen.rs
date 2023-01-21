@@ -238,6 +238,7 @@ pub async fn get_streams(
         .to_string(),
         is_direct: true,
         headers: None,
+        quality: None,
     };
 
     let subs = json

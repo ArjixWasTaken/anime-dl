@@ -118,6 +118,7 @@ pub async fn get_streams(
                 url: source.src.clone().unwrap().to_string(),
                 is_direct: false,
                 headers: None,
+                quality: None,
             })
         });
     });
@@ -129,6 +130,7 @@ pub async fn get_streams(
                 url: hls.to_string(),
                 is_direct: true,
                 headers: None,
+                quality: None,
             });
         });
     });
