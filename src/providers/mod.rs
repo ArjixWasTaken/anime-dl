@@ -4,6 +4,7 @@ use crate::types::{AnimeEpisode, SearchResult, StreamLink};
 use reqwest::Client;
 mod animeonsen;
 mod yugen;
+use anyhow::{anyhow, Context, Result};
 use reqwest_middleware::ClientWithMiddleware;
 
 macro_rules! provider_api {
@@ -12,7 +13,7 @@ macro_rules! provider_api {
             client: &ClientWithMiddleware,
             provider_name: &str,
             $value: &str,
-        ) -> $return {
+        ) -> Result<$return> {
             let call_expr_repr = format!(
                 "{}::{}({}) [{}=\"{}\"]",
                 provider_name,
@@ -24,33 +25,21 @@ macro_rules! provider_api {
 
             crate::terminal::debug(format!("Attempting to execute '{}'", call_expr_repr));
 
-            let Some(ref result) = (match provider_name {
-                                "animeonsen" => Some(animeonsen::$method((client, &$value)).await),
-                                "yugen" => Some(yugen::$method((client, &$value)).await),
-                                _ => None,
-                            }) else {
-                                crate::terminal::error(
-                                    format!(
-                                        "Failed to execute '{}', cause: Provider '{}' not found!",
-                                        call_expr_repr,
-                                        provider_name
-                                    )
-                                );
-                                return None;
-                            };
+            let result: Result<_> = (match provider_name {
+                "animeonsen" => Ok(animeonsen::$method((client, &$value)).await),
+                "yugen" => Ok(yugen::$method((client, &$value)).await),
+                _ => Err(anyhow!("Unknown provider: {}", provider_name)),
+            })?;
 
-            match result.clone() {
-                Some(_) => crate::terminal::debug(format!("Successfully executed '{}'", call_expr_repr)),
-                None => crate::terminal::error(format!("Failed to execute '{}'", call_expr_repr)),
-            }
+            crate::terminal::debug(format!("Successfully executed '{}'", call_expr_repr));
 
-            return result.clone();
+            result
         }
     };
 }
 
-provider_api!(search, query, Option<Vec<SearchResult>>);
+provider_api!(search, query, Vec<SearchResult>);
 #[rustfmt::skip]
-provider_api!(get_episodes, anime_url, Option<Vec<AnimeEpisode>>);
+provider_api!(get_episodes, anime_url, Vec<AnimeEpisode>);
 #[rustfmt::skip]
-provider_api!(get_streams, episode_url, Option<Vec<StreamLink>>);
+provider_api!(get_streams, episode_url, Vec<StreamLink>);

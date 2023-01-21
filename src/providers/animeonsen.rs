@@ -1,5 +1,6 @@
 use std::{collections::HashMap, ops::Index};
 
+use anyhow::{anyhow, Result};
 use reqwest::header::AUTHORIZATION;
 use reqwest::Client;
 use reqwest_middleware::ClientWithMiddleware;
@@ -42,31 +43,31 @@ print(authorization)
 const api_authentication_header: &str = "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImRlZmF1bHQifQ.eyJpc3MiOiJodHRwczovL2F1dGguYW5pbWVvbnNlbi54eXovIiwiYXVkIjoiaHR0cHM6Ly9hcGkuYW5pbWVvbnNlbi54eXoiLCJpYXQiOjE2NzQwNDgzMDAsImV4cCI6MTY3NDY1MzEwMCwic3ViIjoiMDZkMjJiOTYtNjNlNy00NmE5LTgwZmMtZGM0NDFkNDFjMDM4LmNsaWVudCIsImF6cCI6IjA2ZDIyYjk2LTYzZTctNDZhOS04MGZjLWRjNDQxZDQxYzAzOCIsImd0eSI6ImNsaWVudF9jcmVkZW50aWFscyJ9.QjWtxXbWWQLrupXKwXNPR11fQddUauO-cXFMsxISBpcSXxbsFpwZTqmJrT8nbF9ZsxGPCGOX6AqzupGHY66SCP_vf01XpKi-8yxvb_jfcwW4-DA8IWh-bar1zpgyaVScCv1bh91OlLTulxAIkg0W_jfbEh6JYhMTZWBy1b7i-UONX4E-4vblhu3R9CGw2_pbF74IlPDDAPmHHsAF67O9Nx7TarQdvcUwCRzHFmyzyxa_3oZ4Hb_9LeUstINMWi0CM_jursyX4cw-t6XlPOdg41ii4VWHwk0zfQNzSiAPfhLn7tdFrLvYo1ap1MEx60dsS5kWVaJp36AJTjipObqKlQ";
 
 // Since all network calls are cached, we don't care about caching the individual tokens.
-pub async fn get_search_token(client: &ClientWithMiddleware) -> Option<String> {
+pub async fn get_search_token(client: &ClientWithMiddleware) -> Result<String> {
     let res = client
         .get(format!("https://www.{}", host))
         .send()
-        .await
-        .ok()?
+        .await?
         .text()
-        .await
-        .ok()?;
+        .await?;
     let html = Html::parse_document(res.as_str());
     let selector = Selector::parse("[name=\"ao-search-token\"]").unwrap();
-    let token = html.select(&selector).next()?.value().attr("content");
+    let token = html
+        .select(&selector)
+        .next()
+        .ok_or(anyhow!("Failed to find the search token."))?
+        .value()
+        .attr("content")
+        .ok_or(anyhow!(
+            "Found the search token, but the attr content does not exist..."
+        ));
 
-    match token {
-        Some(token) => Some(format!("Bearer {}", token)),
-        None => None,
-    }
+    Ok(format!("Bearer {}", token?))
 }
 
-pub async fn search(args: (&ClientWithMiddleware, &str)) -> Option<Vec<SearchResult>> {
+pub async fn search(args: (&ClientWithMiddleware, &str)) -> Result<Vec<SearchResult>> {
     let (client, query) = args;
-    let Some(token) = get_search_token(client).await else {
-        crate::terminal::error("Failed to retrieve the search token");
-        return None;
-    };
+    let token = get_search_token(client).await?;
 
     let mut json = HashMap::new();
     json.insert("q", query);
@@ -75,34 +76,31 @@ pub async fn search(args: (&ClientWithMiddleware, &str)) -> Option<Vec<SearchRes
         .post(format!("https://search.{}/indexes/content/search", host))
         .header(AUTHORIZATION, token)
         .json(&json)
-        .send().await.ok()? else {
-            return None;
+        .send().await? else {
+            return Err(anyhow!("Failed to make a connection."));
         };
 
-    let json = res.json::<SearchReponse>().await.ok()? else {
-            return None;
-        };
+    let json = res.json::<SearchReponse>().await?;
 
     if json.hits.is_none() {
-        return None;
+        return Err(anyhow!("Unexpected API response."));
     }
 
-    Some(
-        json.clone()
-            .hits
-            .unwrap()
-            .iter()
-            .map(|hit| SearchResult {
-                title: hit.content_title.clone().unwrap(),
-                url: format!(
-                    "https://{}/details/{}",
-                    host,
-                    hit.content_id.clone().unwrap()
-                ),
-                provider: "animeonsen".to_string(),
-            })
-            .collect::<Vec<SearchResult>>(),
-    )
+    Ok(json
+        .clone()
+        .hits
+        .unwrap()
+        .iter()
+        .map(|hit| SearchResult {
+            title: hit.content_title.clone().unwrap(),
+            url: format!(
+                "https://{}/details/{}",
+                host,
+                hit.content_id.clone().unwrap()
+            ),
+            provider: "animeonsen".to_string(),
+        })
+        .collect::<Vec<SearchResult>>())
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -136,15 +134,13 @@ pub struct Episode {
     pub content_title_episode_jp: Option<String>,
 }
 
-pub async fn get_episodes(args: (&ClientWithMiddleware, &str)) -> Option<Vec<AnimeEpisode>> {
+pub async fn get_episodes(args: (&ClientWithMiddleware, &str)) -> Result<Vec<AnimeEpisode>> {
     let (client, url) = args;
-    let Ok(ref id_regex) = regex::Regex::new(r#"animeonsen.xyz/details/(.+)/?"#) else {
-        return None;
-    };
+    let id_regex = regex::Regex::new(r#"animeonsen.xyz/details/(.+)/?"#)?;
 
-    let Some(ref id) = id_regex.captures(url) else {
-        return None;
-    };
+    let id = id_regex
+        .captures(url)
+        .ok_or(anyhow!("Couldn't find an id in the url."))?;
 
     let res = client
         .get(format!(
@@ -154,10 +150,9 @@ pub async fn get_episodes(args: (&ClientWithMiddleware, &str)) -> Option<Vec<Ani
         ))
         .header(AUTHORIZATION, api_authentication_header)
         .send()
-        .await
-        .ok()?;
+        .await?;
 
-    let json = res.json::<EpisodesResponse>().await.ok()?;
+    let json = res.json::<EpisodesResponse>().await?;
     let mut episodes = Vec::new();
 
     for (episode_number, episode) in json {
@@ -183,19 +178,17 @@ pub async fn get_episodes(args: (&ClientWithMiddleware, &str)) -> Option<Vec<Ani
     }
 
     episodes.sort_by(|a, b| a.ep_num.partial_cmp(&b.ep_num).unwrap());
-    Some(episodes)
+    Ok(episodes)
 }
 
-pub async fn get_streams(args: (&ClientWithMiddleware, &str)) -> Option<Vec<StreamLink>> {
+pub async fn get_streams(args: (&ClientWithMiddleware, &str)) -> Result<Vec<StreamLink>> {
     let (client, url) = args;
 
-    let Ok(ref id_regex) = regex::Regex::new(r#"animeonsen.xyz/watch/(.+?)\?episode=(\d+)"#) else {
-        return None;
-    };
+    let id_regex = regex::Regex::new(r#"animeonsen.xyz/watch/(.+?)\?episode=(\d+)"#)?;
 
-    let Some(ref id) = id_regex.captures(url) else {
-        return None;
-    };
+    let id = id_regex
+        .captures(url)
+        .ok_or(anyhow!("Couldn't find an id in the url."))?;
 
     let res = client
         .get(format!(
@@ -206,38 +199,42 @@ pub async fn get_streams(args: (&ClientWithMiddleware, &str)) -> Option<Vec<Stre
         ))
         .header(AUTHORIZATION, api_authentication_header)
         .send()
-        .await
-        .ok()?;
+        .await?;
 
-    let json = res.json::<VideoResponse>().await.ok()?;
+    let json = res.json::<VideoResponse>().await?;
 
-    Some(vec![StreamLink {
-        url: json.clone().uri?.stream?,
+    Ok(vec![StreamLink {
+        url: json.clone().uri.unwrap().stream.unwrap(),
         title: format!(
             "{} - {} - {}",
-            json.clone().metadata?.content_title_en.unwrap_or(
+            json.clone().metadata.unwrap().content_title_en.unwrap_or(
                 json.clone()
-                    .metadata?
+                    .metadata
+                    .unwrap()
                     .content_title
                     .unwrap_or("N/A".to_string())
             ),
             id.index(2),
             json.clone()
-                .metadata?
-                .episode?
+                .metadata
+                .unwrap()
+                .episode
+                .unwrap()
                 .1
                 .content_title_episode_en
                 .unwrap_or(
                     json.clone()
-                        .metadata?
-                        .episode?
+                        .metadata
+                        .unwrap()
+                        .episode
+                        .unwrap()
                         .1
                         .content_title_episode_jp
                         .unwrap_or("N/A".to_string())
                 )
         )
         .to_string(),
-        external_sub_url: json.clone().uri?.subtitles?.en_us?,
+        external_sub_url: json.clone().uri.unwrap().subtitles.unwrap().en_us.unwrap(),
         is_direct: true,
     }])
 }

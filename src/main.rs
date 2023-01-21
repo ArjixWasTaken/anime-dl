@@ -1,6 +1,7 @@
 #![allow(warnings)]
 #[macro_use]
 extern crate clap;
+extern crate anyhow;
 extern crate casual;
 extern crate comfy_table;
 extern crate http_cache_reqwest;
@@ -45,11 +46,11 @@ async fn main() {
 
     if let Some(args) = matches.subcommand_matches("dl") {
         terminal::debug("Executing the 'dl' subcommand.");
-        dl::command(&client, args).await;
+        dl::command(&client, args).await.unwrap();
         terminal::debug("Finished the execution of the 'dl' subcommand.");
     } else if let Some(args) = matches.subcommand_matches("watch") {
         terminal::debug("Executing the 'watch' subcommand.");
-        cmds::watch::command(&client, args).await;
+        cmds::watch::command(&client, args).await.unwrap();
         terminal::debug("Finished the execution of the 'watch' subcommand.");
     } else {
         app.print_help();

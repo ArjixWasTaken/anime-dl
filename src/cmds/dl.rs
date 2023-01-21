@@ -1,3 +1,4 @@
+use anyhow::{anyhow, bail, Result};
 use clap::ArgMatches;
 use reqwest_middleware::ClientWithMiddleware;
 
@@ -5,7 +6,7 @@ use crate::providers;
 use crate::types::SearchResult;
 use crate::utils::search_results_to_table;
 
-pub async fn command(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -> i16 {
+pub async fn command(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -> Result<()> {
     let provider = args.value_of("provider").unwrap();
     let choice = args
         .value_of("choice")
@@ -15,15 +16,13 @@ pub async fn command(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -> i1
     let query = args.value_of("query").unwrap();
     let ep_range = args.value_of("episode").unwrap_or("1:");
 
-    let Some(search_results) = providers::search(client, provider, query).await else {
-        return 1; // Error
-    };
+    let search_results = providers::search(client, provider, query).await?;
 
     if search_results.is_empty() {
         crate::terminal::error(
             "No anime was found using that query, try again with another provider or keyword!",
         );
-        return 1; // Error
+        bail!("NoSearchResults");
     }
 
     let mut chosen: &SearchResult;
@@ -60,26 +59,18 @@ pub async fn command(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -> i1
     } else {
         if choice > search_results.len() as i32 {
             crate::terminal::error(format!("--choice/-c with the value of {}, is more than the number of the available search results ({})", choice, search_results.len()));
-            return 1; // Error
+            bail!("InvalidChoice");
         }
         chosen = search_results.get((choice - 1) as usize).unwrap();
     }
 
     let episodes = providers::get_episodes(client, provider, chosen.url.as_str());
-    let Some(episodes) = episodes.await else {
-        crate::terminal::error("Failed to get episodes!");
-        return 1; // Error
-    };
+    let episodes = episodes.await?;
 
     let ep_range = crate::utils::parse_episode_range(
         ep_range,
         episodes.iter().map(|x| x.ep_num).max().unwrap_or(1),
     );
-
-    let Ok(ep_range) = ep_range else {
-        crate::terminal::error("Could not parse --episode/-e");
-        return 1;
-    };
 
     let episodes = episodes
         .iter()
@@ -100,7 +91,7 @@ pub async fn command(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -> i1
                 .collect::<Vec<_>>()
                 .join(", ")
         ));
-        return 1;
+        bail!("NoEpisodesFound");
     } else if !not_found_episodes.is_empty() {
         crate::terminal::error(format!(
             "Couldn't find the following episodes: {:?}",
@@ -109,5 +100,5 @@ pub async fn command(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -> i1
     }
     println!("Episodes chosen: {:#?}", episodes);
 
-    return 0; // Ok
+    Ok(())
 }
