@@ -1,5 +1,3 @@
-#![allow(non_upper_case_globals)]
-
 use crate::types::{AnimeEpisode, SearchResult, StreamLink, SubtitleTrack};
 use reqwest::Client;
 mod animeonsen;

@@ -53,18 +53,14 @@ pub async fn command(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -> Re
         ));
     }
 
-    // TODO: We should not gather all the episodes at once
-    let mut streams: Vec<Vec<StreamLink>> = Vec::new();
     for episode in episodes {
-        let Ok(streams_) = providers::get_streams(client, provider, episode.url.as_str()).await else {
+        let Ok((streams, subtitles)) = providers::get_streams(client, provider, episode.url.as_str()).await else {
             continue;
         };
 
-        // FIXME: This is only a temporary measure, until the watch command is properly implemented.
-        streams.push(streams_.0);
+        let streams = crate::extractors::unpack_streams(client, streams).await;
+        println!("Streams for episode {}: {:#?}", episode.ep_num, streams);
     }
-
-    println!("Streams: {:#?}", streams);
 
     Ok(())
 }
