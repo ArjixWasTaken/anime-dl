@@ -1,3 +1,4 @@
+use anyhow::Result;
 use comfy_table::presets::ASCII_FULL;
 use comfy_table::Table;
 use reqwest::header;
@@ -23,7 +24,7 @@ pub fn search_results_to_table(search_results: &Vec<SearchResult>) -> Table {
     return table;
 }
 
-pub fn parse_episode_range(episode_range: &str, latest_ep: i32) -> Result<Vec<i32>, String> {
+pub fn parse_episode_range(episode_range: &str, latest_ep: i32) -> Vec<i32> {
     let mut episodes: Vec<i32> = Vec::new();
 
     for ep_range in episode_range.split(",") {
@@ -72,7 +73,7 @@ pub fn parse_episode_range(episode_range: &str, latest_ep: i32) -> Result<Vec<i3
     dedup(&mut episodes);
     episodes.sort();
 
-    return Ok(episodes);
+    episodes
 }
 
 pub fn dedup<T: Eq + Hash + Copy>(v: &mut Vec<T>) {
@@ -84,24 +85,26 @@ pub fn dedup<T: Eq + Hash + Copy>(v: &mut Vec<T>) {
 pub async fn download_episodes(
     client: &ClientWithMiddleware,
     episodes: Vec<&AnimeEpisode>,
-) -> Option<()> {
+) -> Result<bool> {
     let mut headers = header::HeaderMap::new();
     headers.insert(
         "Origin",
-        header::HeaderValue::from_str("https://www.animeonsen.xyz/").ok()?,
+        header::HeaderValue::from_str("https://www.animeonsen.xyz/")?,
     );
     headers.insert(
         "Referer",
-        header::HeaderValue::from_str("https://www.animeonsen.xyz/").ok()?,
+        header::HeaderValue::from_str("https://www.animeonsen.xyz/")?,
     );
 
     for episode in episodes {
         let streams =
-            crate::providers::get_streams(client, &episode.provider, episode.url.as_str()).await?;
+            crate::providers::get_streams(client, &episode.provider, episode.url.as_str())
+                .await
+                .unwrap();
 
         println!("Streams! {:#?}", streams);
         break;
     }
 
-    Some(())
+    Ok(true)
 }

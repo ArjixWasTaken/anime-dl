@@ -24,6 +24,7 @@ dependencies = [
 name = "anime-dl"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "casual",
  "clap",
  "comfy-table",

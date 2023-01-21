@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use anyhow::{anyhow, Result};
 use regex::Regex;
 use reqwest::{header::HeaderValue, Client, Response};
 use reqwest_middleware::ClientWithMiddleware;
@@ -11,43 +12,38 @@ use crate::types::{AnimeEpisode, SearchResult, StreamLink};
 
 const host: &str = "yugen.to";
 
-pub async fn search(args: (&ClientWithMiddleware, &str)) -> Option<Vec<SearchResult>> {
+pub async fn search(args: (&ClientWithMiddleware, &str)) -> Result<Vec<SearchResult>> {
     let (client, query) = args;
     let query = [("q", query)];
     let res = client
         .get(format!("https://{}/search/", host))
         .query(&query)
         .send()
-        .await
-        .ok()?
+        .await?
         .text()
-        .await
-        .ok()?;
-    
+        .await?;
+
     let html = Html::parse_document(res.as_str());
     let selector: Selector = Selector::parse("[class=\"anime-meta\"]").unwrap();
 
-    Some(
-        html.select(&selector)
-            .map(|element| SearchResult {
-                title: element.value().attr("title").unwrap().to_string(),
-                url: format!("https://{}{}", host, element.value().attr("href").unwrap()),
-                provider: "yugen".to_string(),
-            })
-            .collect::<Vec<SearchResult>>(),
-    )
+    Ok(html
+        .select(&selector)
+        .map(|element| SearchResult {
+            title: element.value().attr("title").unwrap().to_string(),
+            url: format!("https://{}{}", host, element.value().attr("href").unwrap()),
+            provider: "yugen".to_string(),
+        })
+        .collect::<Vec<SearchResult>>())
 }
 
-pub async fn get_episodes(args: (&ClientWithMiddleware, &str)) -> Option<Vec<AnimeEpisode>> {
+pub async fn get_episodes(args: (&ClientWithMiddleware, &str)) -> Result<Vec<AnimeEpisode>> {
     let (client, url) = args;
     let res: String = client
         .get(format!("{}watch", url))
         .send()
-        .await
-        .ok()?
+        .await?
         .text()
-        .await
-        .ok()?;
+        .await?;
     let html = Html::parse_document(res.as_str());
     let selector: Selector = Selector::parse("[class=\"ep-card\"] a:nth-child(2)").unwrap();
 
@@ -55,11 +51,13 @@ pub async fn get_episodes(args: (&ClientWithMiddleware, &str)) -> Option<Vec<Ani
     let mut episodes: Vec<AnimeEpisode> = Vec::new();
     for element in html.select(&selector) {
         let ep_num = re
-            .captures(element.value().attr("href")?)?
-            .get(1)?
+            .captures(element.value().attr("href").ok_or(anyhow!(""))?)
+            .ok_or(anyhow!("No match found."))?
+            .get(1)
+            .unwrap()
             .as_str()
-            .parse::<i32>()
-            .ok()?;
+            .parse::<i32>()?;
+
         episodes.push(AnimeEpisode {
             title: element
                 .value()
@@ -74,28 +72,30 @@ pub async fn get_episodes(args: (&ClientWithMiddleware, &str)) -> Option<Vec<Ani
         });
     }
 
-    Some(episodes)
+    Ok(episodes)
 }
 
-pub async fn get_streams(args: (&ClientWithMiddleware, &str)) -> Option<Vec<StreamLink>> {
+pub async fn get_streams(args: (&ClientWithMiddleware, &str)) -> Result<Vec<StreamLink>> {
     let (client, url) = args;
 
-    let res: String = client
-        .get(format!("{}", url))
-        .send()
-        .await
-        .ok()?
-        .text()
-        .await
-        .ok()?;
+    let res: String = client.get(format!("{}", url)).send().await?.text().await?;
 
     let html = Html::parse_document(res.as_str());
     let selector: Selector = Selector::parse("[id=\"main-embed\"]").unwrap();
 
     let re = Regex::new(r#"/e/(.*?)/"#).unwrap();
     let id = re
-        .captures(html.select(&selector).next()?.value().attr("src")?)?
-        .get(1)?
+        .captures(
+            html.select(&selector)
+                .next()
+                .ok_or(anyhow!("Couldn't find the embed."))?
+                .value()
+                .attr("src")
+                .unwrap(),
+        )
+        .ok_or(anyhow!("No match found"))?
+        .get(1)
+        .unwrap()
         .as_str();
 
     let res = client
@@ -103,30 +103,35 @@ pub async fn get_streams(args: (&ClientWithMiddleware, &str)) -> Option<Vec<Stre
         .header("x-requested-with", "XMLHttpRequest")
         .form(&[("id", id), ("ac", "0")])
         .send()
-        .await
-        .ok()?;
+        .await?;
 
-    let json = res.json::<Embed>().await.ok()?;
+    let json = res.json::<Embed>().await?;
 
-    let mut streams = json
-        .sources?
-        .iter()
-        .map(|source| StreamLink {
-            title: source.name.clone().unwrap().to_string(),
-            url: source.src.clone().unwrap().to_string(),
-            external_sub_url: "".to_string(),
-            is_direct: false,
-        })
-        .collect::<Vec<StreamLink>>();
+    let mut streams = vec![];
 
-    streams.extend(json.hls?.iter().map(|hls| StreamLink {
-        title: "HLS".to_string(),
-        url: hls.to_string(),
-        external_sub_url: "".to_string(),
-        is_direct: true,
-    }));
+    json.sources.map(|sources| {
+        sources.iter().for_each(|source| {
+            streams.push(StreamLink {
+                title: source.name.clone().unwrap().to_string(),
+                url: source.src.clone().unwrap().to_string(),
+                external_sub_url: "".to_string(),
+                is_direct: false,
+            })
+        });
+    });
 
-    Some(streams)
+    json.hls.map(|hls| {
+        hls.iter().for_each(|hls| {
+            streams.push(StreamLink {
+                title: "HLS".to_string(),
+                url: hls.to_string(),
+                external_sub_url: "".to_string(),
+                is_direct: true,
+            });
+        });
+    });
+
+    Ok(streams)
 }
 
 #[derive(Debug, Serialize, Deserialize)]

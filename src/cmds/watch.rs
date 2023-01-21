@@ -1,3 +1,4 @@
+use anyhow::{anyhow, bail, Result};
 use clap::ArgMatches;
 use reqwest_middleware::ClientWithMiddleware;
 
@@ -5,7 +6,7 @@ use crate::providers;
 use crate::types::{SearchResult, StreamLink};
 use crate::utils::search_results_to_table;
 
-pub async fn command(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -> i16 {
+pub async fn command(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -> Result<()> {
     let provider = args.value_of("provider").unwrap();
     let choice = args
         .value_of("choice")
@@ -15,9 +16,7 @@ pub async fn command(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -> i1
     let query = args.value_of("query").unwrap();
     let ep_range = args.value_of("episode").unwrap_or("1:");
 
-    let Some(search_results) = providers::search(client, provider, query).await else {
-        return 1; // Error
-    };
+    let search_results = providers::search(client, provider, query).await?;
 
     let mut chosen: &SearchResult;
 
@@ -49,26 +48,17 @@ pub async fn command(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -> i1
     } else {
         if choice > search_results.len() as i32 {
             crate::terminal::error(format!("--choice/-c with the value of {}, is more than the number of the available search results ({})", choice, search_results.len()).as_str());
-            return 1; // Error
+            bail!("InvalidChoice");
         }
         chosen = search_results.get((choice - 1) as usize).unwrap();
     }
 
-    let episodes = providers::get_episodes(client, provider, chosen.url.as_str());
-    let Some(episodes) = episodes.await else {
-        crate::terminal::error("Failed to get episodes!");
-        return 1; // Error
-    };
+    let episodes = providers::get_episodes(client, provider, chosen.url.as_str()).await?;
 
     let ep_range = crate::utils::parse_episode_range(
         ep_range,
         episodes.iter().map(|x| x.ep_num).max().unwrap_or(1),
     );
-
-    let Ok(ep_range) = ep_range else {
-        crate::terminal::error("Could not parse --episode/-e");
-        return 1;
-    };
 
     let episodes = episodes
         .iter()
@@ -78,7 +68,7 @@ pub async fn command(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -> i1
     // TODO: We should not gather all the episodes at once
     let mut streams: Vec<Vec<StreamLink>> = Vec::new();
     for episode in episodes {
-        let Some(streams_) = providers::get_streams(client, provider, episode.url.as_str()).await else {
+        let Ok(streams_) = providers::get_streams(client, provider, episode.url.as_str()).await else {
             continue;
         };
 
@@ -87,5 +77,5 @@ pub async fn command(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -> i1
 
     println!("Streams: {:#?}", streams);
 
-    return 0; // Ok
+    Ok(())
 }
