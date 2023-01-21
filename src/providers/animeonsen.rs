@@ -243,7 +243,7 @@ pub async fn get_streams(
 
     let subs = json
         .clone()
-        .metadata
+        .uri
         .unwrap()
         .subtitles
         .map(|subtitles| {
