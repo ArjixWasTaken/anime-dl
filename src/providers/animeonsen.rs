@@ -207,35 +207,7 @@ pub async fn get_streams(
 
     let stream = StreamLink {
         url: json.clone().uri.unwrap().stream.unwrap(),
-        title: format!(
-            "{} - {} - {}",
-            json.clone().metadata.unwrap().content_title_en.unwrap_or(
-                json.clone()
-                    .metadata
-                    .unwrap()
-                    .content_title
-                    .unwrap_or("N/A".to_string())
-            ),
-            id.index(2),
-            json.clone()
-                .metadata
-                .unwrap()
-                .episode
-                .unwrap()
-                .1
-                .content_title_episode_en
-                .unwrap_or(
-                    json.clone()
-                        .metadata
-                        .unwrap()
-                        .episode
-                        .unwrap()
-                        .1
-                        .content_title_episode_jp
-                        .unwrap_or("N/A".to_string())
-                )
-        )
-        .to_string(),
+        title: "AnimeOnsen".to_string(),
         is_direct: true,
         headers: None,
         quality: None,
