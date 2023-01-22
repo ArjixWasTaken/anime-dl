@@ -7,6 +7,7 @@ pub fn build_cli() -> App<'static, 'static> {
         .version(crate_version!())
         .author(crate_authors!())
         .about(crate_description!())
+        .setting(clap::AppSettings::ArgRequiredElseHelp)
         .subcommands(vec![
             SubCommand::with_name("dl")
                 .about("Download anime")
@@ -70,7 +71,15 @@ pub fn build_cli() -> App<'static, 'static> {
                         .use_delimiter(false)
                         .required(true),
                 ),
-            SubCommand::with_name("search"),
+            SubCommand::with_name("self")
+                .about("Miscellaneous commands")
+                .alias("self_")
+                .setting(clap::AppSettings::ArgRequiredElseHelp)
+                .subcommands(vec![
+                    SubCommand::with_name("update").about("Updates to the latest version."),
+                    SubCommand::with_name("test")
+                        .about("Tests all the providers and prints out which are working or not."),
+                ]),
         ])
         .arg(
             Arg::with_name("verbose")

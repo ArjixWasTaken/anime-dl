@@ -26,19 +26,28 @@ use reqwest::header::USER_AGENT;
 use reqwest_middleware::ClientBuilder;
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
 
-macro_rules! try_cmd {
-    ($cmd:ident, $matches:ident, $client:ident) => {
-        if let Some(args) = $matches.subcommand_matches(stringify!($cmd)) {
-            let cmd_str = stringify!($cmd);
+macro_rules! exec_cmd {
+    ($cmd:ident, $client:expr, $args:expr) => {
+        {
+            let cmd_str = stringify!($cmd).replace("_", "");
             crate::terminal::debug(format!("Executing the '{}' subcommand.", cmd_str));
-            crate::cmds::$cmd::command(&$client, args).await.unwrap();
+            match crate::cmds::$cmd::command(&$client, $args).await {
+                Ok(_) => (),
+                Err(error) => match error.to_string().as_str() {
+                    "NoEpisodesFound" | "NoSearchResults" => (/* The error is known and has already been logged. */),
+                    _ => {
+                        // The error is unknown, and should be logged.
+                        crate::terminal::error(format!("Unhandled error: {}", error));
+                        return;
+                    }
+                }
+            }
             crate::terminal::debug(format!(
                 "Finished the execution of the '{}' subcommand.",
                 cmd_str
             ));
-            return;
-        }
-    };
+        };
+    }
 }
 
 #[tokio::main]
@@ -68,10 +77,10 @@ async fn main() {
         crate::terminal::VERBOSITY = matches.occurrences_of("verbose");
     }
 
-    try_cmd!(dl, matches, client);
-    try_cmd!(watch, matches, client);
-
-    // If no subcommand was matched, print the help message
-    app.print_help();
-    println!(); // clap does not add a newline at the end for some reason...
+    match matches.subcommand() {
+        ("dl", Some(args)) => exec_cmd!(dl, client, args),
+        ("watch", Some(args)) => exec_cmd!(watch, client, args),
+        ("self", Some(args)) => exec_cmd!(self_, client, args),
+        _ => (),
+    }
 }
