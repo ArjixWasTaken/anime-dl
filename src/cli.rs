@@ -33,12 +33,19 @@ pub fn build_cli() -> App<'static, 'static> {
                         .required(true),
                 )
                 .arg(
-                    Arg::with_name("episode")
+                    Arg::with_name("episodes")
                         .short("e")
                         .help("the episode range to download")
                         .default_value("1:")
                         .use_delimiter(false)
                         .required(true),
+                )
+                .arg(
+                    Arg::with_name("last-episode")
+                        .conflicts_with("episodes")
+                        .short("l")
+                        .long("last-episode")
+                        .takes_value(false),
                 ),
             SubCommand::with_name("watch")
                 .about("Watch anime")
@@ -64,12 +71,19 @@ pub fn build_cli() -> App<'static, 'static> {
                         .required(true),
                 )
                 .arg(
-                    Arg::with_name("episode")
+                    Arg::with_name("episodes")
                         .short("e")
                         .help("the episode range to download")
                         .default_value("1:")
                         .use_delimiter(false)
                         .required(true),
+                )
+                .arg(
+                    Arg::with_name("last-episode")
+                        .conflicts_with("episodes")
+                        .short("l")
+                        .long("last-episode")
+                        .takes_value(false),
                 ),
             SubCommand::with_name("self")
                 .about("Miscellaneous commands")
