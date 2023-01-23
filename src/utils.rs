@@ -8,7 +8,7 @@ use std::hash::Hash;
 use std::process::Command;
 use term_painter::{Attr::Plain, ToStyle};
 
-use crate::types::{AnimeEpisode, SearchResult, StreamLink};
+use crate::types::{AnimeEpisode, SearchResult, StreamLink, SubtitleSource, SubtitleTrack};
 
 pub fn search_results_to_table(search_results: &Vec<SearchResult>) -> Table {
     let mut table = Table::new();
@@ -163,9 +163,33 @@ pub async fn download_episodes(
     Ok(true)
 }
 
-pub fn play_stream(stream: &StreamLink) {
-    Command::new("mpv")
-        .arg(&stream.url)
-        .output()
-        .expect("failed to execute process");
+pub fn play_stream_mpv(stream: &StreamLink, subs: Option<&SubtitleTrack>) {
+    let mut cmd = Command::new("mpv");
+    cmd.arg(&stream.url);
+
+    if let Some(headers) = stream.headers.clone() {
+        let headers: Vec<String> = stream
+            .headers
+            .clone()
+            .unwrap()
+            .iter()
+            .map(|(key, value)| format!("{}: {}", key.as_str(), value.to_str().unwrap()))
+            .collect();
+
+        for header in headers {
+            cmd.arg(format!(
+                "--http-header-fields-append={}",
+                &header.replace(" ", "\\ ") // fuck my life, I hate this hack
+            ));
+        }
+    }
+
+    if let Some(subs) = subs {
+        // For now we ignore subs that are not accessible via a url...
+        if let SubtitleSource::Url(src) = subs.src.clone() {
+            cmd.arg(format!("--sub-file={}", src.replace(" ", "\\ ")));
+        }
+    }
+
+    cmd.output().expect("failed to execute process");
 }
