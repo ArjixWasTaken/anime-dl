@@ -38,38 +38,79 @@ pub async fn search(args: (&ClientWithMiddleware, &str)) -> Result<Vec<SearchRes
 
 pub async fn get_episodes(args: (&ClientWithMiddleware, &str)) -> Result<Vec<AnimeEpisode>> {
     let (client, url) = args;
-    let res: String = client
-        .get(format!("{}watch", url))
+    let mut page = 1;
+
+    let mut res: String = client
+        .get(format!("{}watch?page={}", url, page))
         .send()
         .await?
         .text()
         .await?;
-    let html = Html::parse_document(res.as_str());
-    let selector: Selector = Selector::parse("[class=\"ep-card\"] a:nth-child(2)").unwrap();
+
+    let mut html = Html::parse_document(res.as_str());
+    let mut episodes: Vec<AnimeEpisode> = Vec::new();
 
     let re = Regex::new(r#"/watch/\d+/.*?/(\d+)/"#).unwrap();
-    let mut episodes: Vec<AnimeEpisode> = Vec::new();
-    for element in html.select(&selector) {
-        let ep_num = re
-            .captures(element.value().attr("href").ok_or(anyhow!(""))?)
-            .ok_or(anyhow!("No match found."))?
-            .get(1)
-            .unwrap()
-            .as_str()
-            .parse::<i32>()?;
+    let next_page_re = Regex::new(r#"page=(\d+)"#).unwrap();
 
-        episodes.push(AnimeEpisode {
-            title: element
-                .value()
-                .attr("title")
+    let selector: Selector = Selector::parse("[class=\"ep-card\"] a:nth-child(2)").unwrap();
+    let next_page_selector: Selector =
+        Selector::parse("ul.pagination > li:last-child > a").unwrap();
+
+    loop {
+        for element in html.select(&selector) {
+            let ep_num = re
+                .captures(element.value().attr("href").ok_or(anyhow!(""))?)
+                .ok_or(anyhow!("No match found."))?
+                .get(1)
                 .unwrap()
-                .replacen(&format!("{} :", ep_num), "", 1)
-                .trim()
-                .to_string(),
-            url: format!("https://{}{}", host, element.value().attr("href").unwrap()),
-            ep_num: ep_num,
-            provider: "yugen".to_string(),
-        });
+                .as_str()
+                .parse::<i32>()?;
+
+            episodes.push(AnimeEpisode {
+                title: element
+                    .value()
+                    .attr("title")
+                    .unwrap()
+                    .replacen(&format!("{} :", ep_num), "", 1)
+                    .trim()
+                    .to_string(),
+                url: format!("https://{}{}", host, element.value().attr("href").unwrap()),
+                ep_num,
+                provider: "yugen".to_string(),
+            });
+        }
+
+        // A lot of breaks here, lol, should refactor them out...
+        if let Some(next_page) = &html.select(&next_page_selector).next() {
+            if let Some(href) = next_page.value().attr("href") {
+                if let Some(next) = next_page_re.captures(href) {
+                    if let Ok(next) = next.get(1).unwrap().as_str().parse::<i32>() {
+                        if page == next {
+                            break;
+                        }
+                        page = next;
+                    } else {
+                        break;
+                    }
+                } else {
+                    break;
+                }
+            } else {
+                break;
+            }
+        } else {
+            break;
+        }
+
+        res = client
+            .get(format!("{}watch?page={}", url, page))
+            .send()
+            .await?
+            .text()
+            .await?;
+
+        html = Html::parse_document(res.as_str());
     }
 
     Ok(episodes)
