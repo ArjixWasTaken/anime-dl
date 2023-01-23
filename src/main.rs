@@ -10,6 +10,7 @@ extern crate reqwest_middleware;
 extern crate reqwest_retry;
 extern crate serde;
 extern crate serde_json;
+extern crate spinach;
 extern crate term;
 extern crate term_painter;
 
