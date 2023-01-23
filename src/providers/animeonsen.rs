@@ -89,10 +89,10 @@ pub async fn search(args: (&ClientWithMiddleware, &str)) -> Result<Vec<SearchRes
     Ok(json
         .clone()
         .hits
-        .unwrap()
+        .ok_or(anyhow!("fuck"))?
         .iter()
         .map(|hit| SearchResult {
-            title: hit.content_title.clone().unwrap(),
+            title: hit.content_title.clone().unwrap().trim().to_string(),
             url: format!(
                 "https://{}/details/{}",
                 host,

@@ -29,7 +29,7 @@ pub async fn search(args: (&ClientWithMiddleware, &str)) -> Result<Vec<SearchRes
     Ok(html
         .select(&selector)
         .map(|element| SearchResult {
-            title: element.value().attr("title").unwrap().to_string(),
+            title: element.value().attr("title").unwrap().trim().to_string(),
             url: format!("https://{}{}", host, element.value().attr("href").unwrap()),
             provider: "yugen".to_string(),
         })
