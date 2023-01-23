@@ -133,7 +133,7 @@ pub async fn test(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -> Resul
     println!();
     test_streams(client).await?;
 
-    Cyan.with(|| print!("Done!"));
+    Cyan.with(|| println!("Done!"));
     Ok(())
 }
 
