@@ -13,7 +13,7 @@ pub fn build_cli() -> App<'static, 'static> {
                 .about("Download anime")
                 .arg(
                     Arg::with_name("query")
-                        .help("the name of the anime")
+                        .help("The anime to search for.")
                         .required(true)
                         .index(1),
                 )
@@ -44,7 +44,7 @@ pub fn build_cli() -> App<'static, 'static> {
                 .about("Watch anime")
                 .arg(
                     Arg::with_name("query")
-                        .help("the name of the anime")
+                        .help("The anime to search for.")
                         .required(true)
                         .index(1),
                 )
@@ -78,7 +78,13 @@ pub fn build_cli() -> App<'static, 'static> {
                 .subcommands(vec![
                     SubCommand::with_name("update").about("Updates to the latest version."),
                     SubCommand::with_name("test")
-                        .about("Tests all the providers and prints out which are working or not."),
+                        .about("Tests all the providers and prints out which are working or not.")
+                        .arg(
+                            Arg::with_name("query")
+                                .index(1)
+                                .default_value("Overlord")
+                                .help("The anime to search for."),
+                        ),
                 ]),
         ])
         .arg(
