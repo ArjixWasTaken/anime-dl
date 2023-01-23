@@ -163,9 +163,10 @@ pub async fn download_episodes(
     Ok(true)
 }
 
-pub fn play_stream_mpv(stream: &StreamLink, subs: Option<&SubtitleTrack>) {
+pub fn play_stream_mpv(title: String, stream: &StreamLink, subs: Vec<SubtitleTrack>) {
     let mut cmd = Command::new("mpv");
     cmd.arg(&stream.url);
+    cmd.arg(format!("--force-media-title={}", title));
 
     if let Some(headers) = stream.headers.clone() {
         let headers: Vec<String> = stream
@@ -184,9 +185,9 @@ pub fn play_stream_mpv(stream: &StreamLink, subs: Option<&SubtitleTrack>) {
         }
     }
 
-    if let Some(subs) = subs {
+    for sub in subs {
         // For now we ignore subs that are not accessible via a url...
-        if let SubtitleSource::Url(src) = subs.src.clone() {
+        if let SubtitleSource::Url(src) = sub.src.clone() {
             cmd.arg(format!("--sub-file={}", src.replace(" ", "\\ ")));
         }
     }
