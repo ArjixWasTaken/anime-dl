@@ -74,7 +74,7 @@ async fn main() {
     )
         .with(RetryTransientMiddleware::new_with_policy(retry_policy))
         .with(Cache(HttpCache {
-            mode: CacheMode::Default,
+            mode: CacheMode::ForceCache,
             manager: CACacheManager::default(),
             options: None,
         }))
