@@ -21,10 +21,12 @@ pub async fn command(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -> Re
 
     let episodes = providers::get_episodes(client, provider, chosen.url.as_str()).await?;
 
-    let ep_range = crate::utils::parse_episode_range(
-        ep_range,
-        episodes.iter().map(|x| x.ep_num).max().unwrap_or(1),
-    );
+    let latest_ep = episodes.iter().map(|x| x.ep_num).max().unwrap_or(1);
+    let mut ep_range = crate::utils::parse_episode_range(ep_range, latest_ep.clone());
+
+    if args.is_present("last-episode") {
+        ep_range = vec![latest_ep];
+    }
 
     let episodes = episodes
         .iter()
