@@ -27,15 +27,16 @@ pub fn build_cli() -> App<'static, 'static> {
                 .arg(
                     Arg::with_name("choice")
                         .short("c")
-                        .help("choice to start downloading given anime number")
+                        .help("If set, will skip the search select prompt and will choose the search result with this number.")
                         .default_value("-1")
                         .use_delimiter(false)
-                        .required(true),
+                        .required(true)
+                        .hide_default_value(true),
                 )
                 .arg(
                     Arg::with_name("episodes")
                         .short("e")
-                        .help("the episode range to download")
+                        .help("The episode range to download.")
                         .default_value("1:")
                         .use_delimiter(false)
                         .required(true),
@@ -45,7 +46,8 @@ pub fn build_cli() -> App<'static, 'static> {
                         .conflicts_with("episodes")
                         .short("l")
                         .long("last-episode")
-                        .takes_value(false),
+                        .takes_value(false)
+                        .help("Automatically selects the last episode available."),
                 ),
             SubCommand::with_name("watch")
                 .about("Watch anime")
@@ -58,22 +60,23 @@ pub fn build_cli() -> App<'static, 'static> {
                 .arg(
                     Arg::with_name("provider")
                         .short("p")
-                        .help("the anime provider (website) for search.")
+                        .help("The anime provider (website) for search.")
                         .default_value(PROVIDERS.first().unwrap())
                         .possible_values(PROVIDERS),
                 )
                 .arg(
                     Arg::with_name("choice")
                         .short("c")
-                        .help("choice to start downloading given anime number")
+                        .help("If set, will skip the search select prompt and will choose the search result with this number.")
                         .default_value("-1")
                         .use_delimiter(false)
-                        .required(true),
+                        .required(true)
+                        .hide_default_value(true),
                 )
                 .arg(
                     Arg::with_name("episodes")
                         .short("e")
-                        .help("the episode range to download")
+                        .help("The episode range to stream.")
                         .default_value("1:")
                         .use_delimiter(false)
                         .required(true),
@@ -83,7 +86,8 @@ pub fn build_cli() -> App<'static, 'static> {
                         .conflicts_with("episodes")
                         .short("l")
                         .long("last-episode")
-                        .takes_value(false),
+                        .takes_value(false)
+                        .help("Automatically selects the last episode available."),
                 ),
             SubCommand::with_name("self")
                 .about("Miscellaneous commands")
