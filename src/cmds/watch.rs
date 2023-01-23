@@ -63,14 +63,18 @@ pub async fn command(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -> Re
 
         if !streams.is_empty() {
             use term_painter::{Color::Yellow, ToStyle};
-            println!(
-                "Now playing {}!",
-                Yellow.paint(format!(
-                    "{} - {} - {}",
-                    chosen.title, episode.ep_num, episode.title
-                ))
+            let title = format!(
+                "{} - {}{}",
+                &chosen.title,
+                episode.ep_num,
+                if episode.title.is_empty() {
+                    "".to_string()
+                } else {
+                    " - ".to_string() + &episode.title
+                }
             );
-            crate::utils::play_stream_mpv(streams.first().unwrap(), subtitles.first());
+            println!("Now playing {}!", Yellow.paint(&title));
+            crate::utils::play_stream_mpv(title, streams.first().unwrap(), subtitles);
             continue;
         }
     }
