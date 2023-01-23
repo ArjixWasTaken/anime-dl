@@ -5,9 +5,10 @@ use reqwest::header;
 use reqwest_middleware::ClientWithMiddleware;
 use std::collections::HashSet;
 use std::hash::Hash;
+use std::process::Command;
 use term_painter::{Attr::Plain, ToStyle};
 
-use crate::types::{AnimeEpisode, SearchResult};
+use crate::types::{AnimeEpisode, SearchResult, StreamLink};
 
 pub fn search_results_to_table(search_results: &Vec<SearchResult>) -> Table {
     let mut table = Table::new();
@@ -160,4 +161,11 @@ pub async fn download_episodes(
     }
 
     Ok(true)
+}
+
+pub fn play_stream(stream: &StreamLink) {
+    Command::new("mpv")
+        .arg(&stream.url)
+        .output()
+        .expect("failed to execute process");
 }

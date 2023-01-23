@@ -60,8 +60,19 @@ pub async fn command(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -> Re
 
         let (streams, subtitles) =
             crate::extractors::unpack_streams(client, streams, subtitles).await;
-        println!("Streams for episode {}: {:#?}", episode.ep_num, streams);
-        println!("Subtitles for episode {}: {:#?}", episode.ep_num, subtitles);
+
+        if !streams.is_empty() {
+            use term_painter::{Color::Yellow, ToStyle};
+            println!(
+                "Now playing {}!",
+                Yellow.paint(format!(
+                    "{} - {} - {}",
+                    chosen.title, episode.ep_num, episode.title
+                ))
+            );
+            crate::utils::play_stream(streams.first().unwrap());
+            continue;
+        }
     }
 
     Ok(())
