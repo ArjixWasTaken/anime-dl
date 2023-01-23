@@ -52,6 +52,12 @@ macro_rules! exec_cmd {
 
 #[tokio::main]
 async fn main() {
+    ctrlc::set_handler(|| {
+        spinach::term::show_cursor();
+        std::process::exit(0);
+    })
+    .expect("Error setting Ctrl-C handler");
+
     let mut app = cli::build_cli();
     let matches = app.clone().get_matches();
 
