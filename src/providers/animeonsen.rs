@@ -209,7 +209,10 @@ pub async fn get_streams(
         url: json.clone().uri.unwrap().stream.unwrap(),
         title: "AnimeOnsen".to_string(),
         is_direct: true,
-        headers: None,
+        headers: Some(vec![(
+            "Referer".parse()?,
+            format!("https://www.{}", host).parse()?,
+        )]),
         quality: None,
     };
 

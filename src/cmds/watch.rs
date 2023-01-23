@@ -70,7 +70,7 @@ pub async fn command(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -> Re
                     chosen.title, episode.ep_num, episode.title
                 ))
             );
-            crate::utils::play_stream(streams.first().unwrap());
+            crate::utils::play_stream_mpv(streams.first().unwrap(), subtitles.first());
             continue;
         }
     }
