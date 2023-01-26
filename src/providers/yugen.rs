@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use anyhow::{anyhow, Result};
+use lazy_static::lazy_static;
 use regex::Regex;
 use reqwest::{header::HeaderValue, Client, Response};
 use reqwest_middleware::ClientWithMiddleware;
@@ -9,6 +10,13 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::types::{AnimeEpisode, SearchResult, StreamLink, SubtitleTrack};
+
+#[rustfmt::skip]
+lazy_static! {
+    static ref RE: Regex = Regex::new(r#"/watch/\d+/.*?/(\d+)/"#).unwrap();
+    static ref NEXT_PAGE_RE: Regex = Regex::new(r#"page=(\d+)"#).unwrap();
+    static ref EMBED_RE: Regex = Regex::new(r#"/e/(.*?)/"#).unwrap();
+}
 
 const host: &str = "yugen.to";
 
@@ -50,16 +58,13 @@ pub async fn get_episodes(args: (&ClientWithMiddleware, &str)) -> Result<Vec<Ani
     let mut html = Html::parse_document(res.as_str());
     let mut episodes: Vec<AnimeEpisode> = Vec::new();
 
-    let re = Regex::new(r#"/watch/\d+/.*?/(\d+)/"#).unwrap();
-    let next_page_re = Regex::new(r#"page=(\d+)"#).unwrap();
-
     let selector: Selector = Selector::parse("[class=\"ep-card\"] a:nth-child(2)").unwrap();
     let next_page_selector: Selector =
         Selector::parse("ul.pagination > li:last-child > a").unwrap();
 
     loop {
         for element in html.select(&selector) {
-            let ep_num = re
+            let ep_num = RE
                 .captures(element.value().attr("href").ok_or(anyhow!(""))?)
                 .ok_or(anyhow!("No match found."))?
                 .get(1)
@@ -84,7 +89,7 @@ pub async fn get_episodes(args: (&ClientWithMiddleware, &str)) -> Result<Vec<Ani
         // A lot of breaks here, lol, should refactor them out...
         if let Some(next_page) = &html.select(&next_page_selector).next() {
             if let Some(href) = next_page.value().attr("href") {
-                if let Some(next) = next_page_re.captures(href) {
+                if let Some(next) = NEXT_PAGE_RE.captures(href) {
                     if let Ok(next) = next.get(1).unwrap().as_str().parse::<i32>() {
                         if page == next {
                             break;
@@ -126,8 +131,7 @@ pub async fn get_streams(
     let html = Html::parse_document(res.as_str());
     let selector: Selector = Selector::parse("[id=\"main-embed\"]").unwrap();
 
-    let re = Regex::new(r#"/e/(.*?)/"#).unwrap();
-    let id = re
+    let id = EMBED_RE
         .captures(
             html.select(&selector)
                 .next()

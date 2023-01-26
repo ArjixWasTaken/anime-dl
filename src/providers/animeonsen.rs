@@ -1,6 +1,8 @@
 use std::{collections::HashMap, ops::Index};
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, bail, Result};
+use lazy_static::lazy_static;
+use regex::Regex;
 use reqwest::header::AUTHORIZATION;
 use reqwest::Client;
 use reqwest_middleware::ClientWithMiddleware;
@@ -8,6 +10,12 @@ use scraper::{Html, Selector};
 use serde::{Deserialize, Serialize};
 
 use crate::types::{AnimeEpisode, SearchResult, StreamLink, SubtitleSource, SubtitleTrack};
+
+#[rustfmt::skip]
+lazy_static! {
+    static ref ID_REGEX: Regex = Regex::new(r#"animeonsen.xyz/details/(.+)/?"#).unwrap();
+    static ref EP_REGEX: Regex = Regex::new(r#"animeonsen.xyz/watch/(.+?)\?episode=(\d+)"#).unwrap();
+}
 
 const host: &str = "animeonsen.xyz";
 
@@ -40,7 +48,7 @@ print(authorization)
 */
 
 #[rustfmt::skip]
-const api_authentication_header: &str = "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImRlZmF1bHQifQ.eyJpc3MiOiJodHRwczovL2F1dGguYW5pbWVvbnNlbi54eXovIiwiYXVkIjoiaHR0cHM6Ly9hcGkuYW5pbWVvbnNlbi54eXoiLCJpYXQiOjE2NzQwNDgzMDAsImV4cCI6MTY3NDY1MzEwMCwic3ViIjoiMDZkMjJiOTYtNjNlNy00NmE5LTgwZmMtZGM0NDFkNDFjMDM4LmNsaWVudCIsImF6cCI6IjA2ZDIyYjk2LTYzZTctNDZhOS04MGZjLWRjNDQxZDQxYzAzOCIsImd0eSI6ImNsaWVudF9jcmVkZW50aWFscyJ9.QjWtxXbWWQLrupXKwXNPR11fQddUauO-cXFMsxISBpcSXxbsFpwZTqmJrT8nbF9ZsxGPCGOX6AqzupGHY66SCP_vf01XpKi-8yxvb_jfcwW4-DA8IWh-bar1zpgyaVScCv1bh91OlLTulxAIkg0W_jfbEh6JYhMTZWBy1b7i-UONX4E-4vblhu3R9CGw2_pbF74IlPDDAPmHHsAF67O9Nx7TarQdvcUwCRzHFmyzyxa_3oZ4Hb_9LeUstINMWi0CM_jursyX4cw-t6XlPOdg41ii4VWHwk0zfQNzSiAPfhLn7tdFrLvYo1ap1MEx60dsS5kWVaJp36AJTjipObqKlQ";
+const api_authentication_header: &str = "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImRlZmF1bHQifQ.eyJpc3MiOiJodHRwczovL2F1dGguYW5pbWVvbnNlbi54eXovIiwiYXVkIjoiaHR0cHM6Ly9hcGkuYW5pbWVvbnNlbi54eXoiLCJpYXQiOjE2NzQzMzAzMTMsImV4cCI6MTY3NDkzNTExMywic3ViIjoiMDZkMjJiOTYtNjNlNy00NmE5LTgwZmMtZGM0NDFkNDFjMDM4LmNsaWVudCIsImF6cCI6IjA2ZDIyYjk2LTYzZTctNDZhOS04MGZjLWRjNDQxZDQxYzAzOCIsImd0eSI6ImNsaWVudF9jcmVkZW50aWFscyJ9.otxwq_uP-rUM4ufgcvX4EHgtCaVSOTyHZsfhI8qKHY7uIMySeouMc1ktjRR_9VHYiaNAIla-l3NyPlK2Y1KpiOKs3UFow3O98vQHoCaJHX01V6hWFip2hII7lUkr1Q-qc67udJgz5NQ0UKz-xOKM3DCI8uF3SSPT-gIvWPJYQ9zT5loPGmuCKYrtWfUmzFxa43Vtpj5ZlETQ-FXMU3Zd7IAJ-5HfGTPegm1Zky_-6d7zoKo6it96KnMzmfUWef7yux5Ll2PY7H-B00AUXUOerZYra345CsRX74CpTOiN063lMKEo1yKRu9xVnlkOHDzO3IDLRuC4bAsVNtrjZKer9g";
 
 // Since all network calls are cached, we don't care about caching the individual tokens.
 pub async fn get_search_token(client: &ClientWithMiddleware) -> Result<String> {
@@ -136,9 +144,8 @@ pub struct Episode {
 
 pub async fn get_episodes(args: (&ClientWithMiddleware, &str)) -> Result<Vec<AnimeEpisode>> {
     let (client, url) = args;
-    let id_regex = regex::Regex::new(r#"animeonsen.xyz/details/(.+)/?"#)?;
 
-    let id = id_regex
+    let id = ID_REGEX
         .captures(url)
         .ok_or(anyhow!("Couldn't find an id in the url."))?;
 
@@ -186,9 +193,7 @@ pub async fn get_streams(
 ) -> Result<(Vec<StreamLink>, Vec<SubtitleTrack>)> {
     let (client, url) = args;
 
-    let id_regex = regex::Regex::new(r#"animeonsen.xyz/watch/(.+?)\?episode=(\d+)"#)?;
-
-    let id = id_regex
+    let id = EP_REGEX
         .captures(url)
         .ok_or(anyhow!("Couldn't find an id in the url."))?;
 
