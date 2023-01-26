@@ -14,7 +14,7 @@ pub async fn command(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -> Re
         .parse::<i32>()
         .unwrap();
     let query = args.value_of("query").unwrap();
-    let ep_range = args.value_of("episode").unwrap_or("1:");
+    let ep_range = args.value_of("episodes").unwrap_or("1:");
 
     let search_results = providers::search(client, provider, query).await?;
     let chosen = crate::utils::user_select_result(search_results, choice)?;

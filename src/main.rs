@@ -17,6 +17,7 @@ extern crate term_painter;
 mod cli;
 mod cmds;
 mod extractors;
+mod m3u8;
 mod providers;
 mod terminal;
 mod types;

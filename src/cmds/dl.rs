@@ -14,7 +14,7 @@ pub async fn command(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -> Re
         .parse::<i32>()
         .unwrap();
     let query = args.value_of("query").unwrap();
-    let ep_range = args.value_of("episode").unwrap_or("1:");
+    let ep_range = args.value_of("episodes").unwrap_or("1:");
 
     let search_results = providers::search(client, provider, query).await?;
 
@@ -56,7 +56,22 @@ pub async fn command(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -> Re
             not_found_episodes
         ));
     }
-    println!("Episodes chosen: {:#?}", episodes);
+    crate::terminal::debug(format!("Episodes chosen: {:?}", episodes));
+
+    let single_ep = episodes.first().unwrap();
+    let streams = crate::providers::get_streams(client, provider, &single_ep.url).await;
+
+    crate::terminal::debug(format!("Streams for '{}': {:?}", single_ep.url, streams));
+
+    println!("Streams: {:#?}", streams?.0);
+    // let stream = streams?
+    //     .0
+    //     .iter()
+    //     .find(|x| x.title == "HLS")
+    //     .unwrap()
+    //     .clone();
+
+    // crate::m3u8::extract_streams(client, stream.url, stream.headers);
 
     Ok(())
 }

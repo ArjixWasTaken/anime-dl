@@ -163,6 +163,15 @@ pub async fn download_episodes(
     Ok(true)
 }
 
+pub fn get_absolute_extension<S: AsRef<str>>(link: S) -> Option<String> {
+    let Some(filename) = link.as_ref().split("/").last() else { return None; };
+    let filename = filename.split("?").collect::<Vec<_>>() else { return None; };
+    let Some(filename) = filename.first() else { return None; };
+    let Some(extension) = filename.clone().split(".").last() else { return None; };
+
+    Some(extension.to_string())
+}
+
 pub fn play_stream_mpv(title: String, stream: &StreamLink, subs: Vec<SubtitleTrack>) {
     let mut cmd = Command::new("mpv");
     cmd.arg(&stream.url);
