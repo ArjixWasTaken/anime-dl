@@ -8,6 +8,7 @@ use term_painter::{
 };
 
 use spinach::{Color, Spinach};
+use std::ops::Not;
 
 use crate::types::SearchResult;
 
@@ -34,22 +35,27 @@ pub async fn test_search(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -
 
         let search = crate::providers::search(client, provider, query).await;
         if search.is_ok() {
-            let num = search.unwrap().len().to_string();
-            s.freeze(
-                "✔",
-                format!(
-                    " {}{}[ {} search results ]",
-                    provider,
-                    " ".repeat((padding - &provider.len() + 1)),
-                    if num.len() < 2 {
-                        " ".to_string() + &num
-                    } else {
-                        num
-                    },
-                ),
-                None,
-                None,
-            );
+            let num = search.unwrap().len();
+            if num != 0 {
+                let snum = num.to_string();
+                s.freeze(
+                    "✔",
+                    format!(
+                        " {}{}[ {} search results ]",
+                        provider,
+                        " ".repeat((padding - &provider.len() + 1)),
+                        if snum.len() < 2 {
+                            " ".to_string() + &snum
+                        } else {
+                            snum
+                        },
+                    ),
+                    None,
+                    None,
+                );
+            } else {
+                s.freeze("✖", format!(" {} [ 0 search results ]", provider), Color::Red, None);
+            }
         } else {
             s.freeze("✖", format!(" {}", provider), Color::Red, None);
         }
@@ -74,10 +80,34 @@ pub async fn test_episodes(client: &ClientWithMiddleware) -> Result<()> {
         s.text(format!(" Testing {}", provider));
 
         let search = crate::providers::search(client, provider, "overlord").await;
+        let mut check = "✖";
+
+        if search.is_ok() {
+            let val = search.unwrap();
+            let result = val.first();
+
+            if result.is_none().not() {
+                check = "✔";
+                let url = &result.unwrap().url;
+                let episodes = crate::providers::get_episodes(client, provider, url).await;
+
+                if episodes.is_ok() {
+                    let val = episodes.unwrap();
+                    let eps = val.first();
+
+                    if eps.is_none() {
+                        check = "✖";
+                    }
+                } else {
+                    check = "✖";
+                }
+            }
+        }
+
         s.freeze(
-            if search.is_ok() { "✔" } else { "✖" },
+            check,
             format!(" {}", provider,),
-            if search.is_ok() {
+            if check.eq("✔") {
                 Color::Green
             } else {
                 Color::Red
