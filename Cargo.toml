@@ -34,6 +34,9 @@ spinach = "2.1.0"
 ctrlc = { version = "3.0", features = ["termination"] }
 hls_m3u8 = "0.4.1"
 lazy_static = "1.4.0"
+cookie = { version = "0.17.0" }
+urlencoding = "2.1.2"
+base64 = "0.21.0"
 
 [build-dependencies]
 clap = "2"
