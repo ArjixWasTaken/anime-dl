@@ -2,8 +2,10 @@
 #[macro_use]
 extern crate clap;
 extern crate anyhow;
+extern crate base64;
 extern crate casual;
 extern crate comfy_table;
+extern crate cookie;
 extern crate http_cache_reqwest;
 extern crate reqwest;
 extern crate reqwest_middleware;
@@ -13,6 +15,7 @@ extern crate serde_json;
 extern crate spinach;
 extern crate term;
 extern crate term_painter;
+extern crate urlencoding;
 
 mod cli;
 mod cmds;
