@@ -19,36 +19,6 @@ lazy_static! {
 
 pub const host: &str = "animeonsen.xyz";
 pub const test_episodes_link: &str = "https://www.animeonsen.xyz/details/d5eRZVtbu86Kwy7E";
-// python code on how to get the api token:
-/*
-import httpx
-import base64
-import urllib.parse
-
-headers = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:108.0) Gecko/20100101 Firefox/108.0",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp",
-    "Accept-Language": "en-US,en;q=0.5",
-    "Upgrade-Insecure-Requests": "1",
-    "Sec-Fetch-Dest": "document",
-    "Sec-Fetch-Mode": "navigate",
-    "Sec-Fetch-Site": "none",
-    "Sec-Fetch-User": "?1",
-}
-
-res = httpx.get("https://www.animeonsen.xyz/", headers=headers)
-
-cookie = urllib.parse.unquote(res.cookies.get("ao.session", ""))
-authorization = "Bearer "
-authorization += "".join(
-    [chr(ord(x) + 1) for x in base64.b64decode(cookie).decode("utf-8")]
-)
-
-print(authorization)
-*/
-
-#[rustfmt::skip]
-const api_authentication_header: &str = "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImRlZmF1bHQifQ.eyJpc3MiOiJodHRwczovL2F1dGguYW5pbWVvbnNlbi54eXovIiwiYXVkIjoiaHR0cHM6Ly9hcGkuYW5pbWVvbnNlbi54eXoiLCJpYXQiOjE2NzQzMzAzMTMsImV4cCI6MTY3NDkzNTExMywic3ViIjoiMDZkMjJiOTYtNjNlNy00NmE5LTgwZmMtZGM0NDFkNDFjMDM4LmNsaWVudCIsImF6cCI6IjA2ZDIyYjk2LTYzZTctNDZhOS04MGZjLWRjNDQxZDQxYzAzOCIsImd0eSI6ImNsaWVudF9jcmVkZW50aWFscyJ9.otxwq_uP-rUM4ufgcvX4EHgtCaVSOTyHZsfhI8qKHY7uIMySeouMc1ktjRR_9VHYiaNAIla-l3NyPlK2Y1KpiOKs3UFow3O98vQHoCaJHX01V6hWFip2hII7lUkr1Q-qc67udJgz5NQ0UKz-xOKM3DCI8uF3SSPT-gIvWPJYQ9zT5loPGmuCKYrtWfUmzFxa43Vtpj5ZlETQ-FXMU3Zd7IAJ-5HfGTPegm1Zky_-6d7zoKo6it96KnMzmfUWef7yux5Ll2PY7H-B00AUXUOerZYra345CsRX74CpTOiN063lMKEo1yKRu9xVnlkOHDzO3IDLRuC4bAsVNtrjZKer9g";
 
 // Since all network calls are cached, we don't care about caching the individual tokens.
 // Note: the above statement is invalid, for some fucking reason animeonsen isn't cached, that might be due to some headers.
@@ -72,6 +42,23 @@ pub async fn get_search_token(client: &ClientWithMiddleware) -> Result<String> {
         ));
 
     Ok(format!("Bearer {}", token?))
+}
+
+pub async fn get_api_token(client: &ClientWithMiddleware) -> Result<String> {
+    use base64::{engine::general_purpose, Engine as _};
+    use cookie::Cookie;
+
+    let res = client.get(format!("https://www.{}", host)).send().await?;
+
+    let Some(cookie) = res.headers().get("set-cookie") else { bail!("AnimeOnsen: No cookies were found."); };
+    let cookie = Cookie::parse(cookie.to_str()?)?.value().to_string();
+    let cookie = urlencoding::decode(cookie.as_str())?.to_string();
+    let mut decoded = general_purpose::STANDARD.decode(cookie).unwrap();
+    decoded = decoded.into_iter().map(|x| x + 1).collect();
+
+    let decoded = std::str::from_utf8(&decoded);
+
+    Ok(format!("Bearer {}", decoded?))
 }
 
 pub async fn search(args: (&ClientWithMiddleware, &str)) -> Result<Vec<SearchResult>> {
@@ -149,6 +136,7 @@ pub async fn get_episodes(args: (&ClientWithMiddleware, &str)) -> Result<Vec<Ani
     let id = ID_REGEX
         .captures(url)
         .ok_or(anyhow!("Couldn't find an id in the url."))?;
+    let api_token = get_api_token(client).await?;
 
     let res = client
         .get(format!(
@@ -156,7 +144,7 @@ pub async fn get_episodes(args: (&ClientWithMiddleware, &str)) -> Result<Vec<Ani
             host,
             id.index(1)
         ))
-        .header(AUTHORIZATION, api_authentication_header)
+        .header(AUTHORIZATION, api_token)
         .send()
         .await?;
 
@@ -210,6 +198,8 @@ pub async fn get_streams(
         .captures(url)
         .ok_or(anyhow!("Couldn't find an id in the url."))?;
 
+    let api_token = get_api_token(client).await?;
+
     let res = client
         .get(format!(
             "https://api.{}/v4/content/{}/video/{}",
@@ -217,7 +207,7 @@ pub async fn get_streams(
             id.index(1),
             id.index(2),
         ))
-        .header(AUTHORIZATION, api_authentication_header)
+        .header(AUTHORIZATION, api_token)
         .send()
         .await?;
 
