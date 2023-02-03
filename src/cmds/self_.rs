@@ -74,45 +74,64 @@ pub async fn test_episodes(client: &ClientWithMiddleware) -> Result<()> {
     let s = Spinach::new(" Testing ...");
     s.color(Color::Green);
 
+    for provider in crate::cli::PROVIDERS {
+        s.text(format!(" Testing {}", provider));
+
+        // Note: this doesnt need to be async, but changing it would require rewriting the macro...
+        let url = crate::providers::get_test_url(client, provider, "0").await?;
+        let episodes = crate::providers::test_episodes(client, provider, &url).await;
+
+        let mut check = "✖";
+        let mut color = Color::Red;
+        let mut details: String = String::new();
+
+        match episodes {
+            Ok((found, expected)) => {
+                if found == expected {
+                    check = "✔";
+                    color = Color::Green;
+                }
+
+                let sfound = {
+                    let s = found.to_string();
+                    let lpad = expected.to_string().len() - s.len();
+                    " ".repeat(lpad).to_string() + &s
+                };
+
+                details = format!(
+                    "{}[ {} out of {} eps ]",
+                    " ".repeat(padding - provider.len() + 1),
+                    Plain.fg(term_painter::Color::Green).paint(sfound),
+                    Plain.fg(term_painter::Color::Green).paint(expected)
+                );
+            }
+            Err(err) => {
+                println!("{:#?}", err);
+            }
+        }
+
+        s.freeze(check, format!(" {}{}", provider, details), color, None);
+        s.text(" Testing ...");
+    }
+    s.stop_with("", "", None);
+
+    Ok(())
+}
+
+pub async fn test_streams(client: &ClientWithMiddleware) -> Result<()> {
+    println!("{}", Plain.bold().paint("Fetching streams:"));
+
+    let padding = crate::cli::PROVIDERS.iter().map(|x| x.len()).max().unwrap();
+
+    let s = Spinach::new(" Testing ...");
+    s.color(Color::Green);
+
     // TODO: Actually implement this...
 
     for provider in crate::cli::PROVIDERS {
         s.text(format!(" Testing {}", provider));
 
         let search = crate::providers::search(client, provider, "overlord").await;
-        let mut check = "✖";
-
-        if search.is_ok() {
-            let val = search.unwrap();
-            let result = val.first();
-
-            if result.is_none().not() {
-                check = "✔";
-                let url = &result.unwrap().url;
-                let episodes = crate::providers::get_episodes(client, provider, url).await;
-
-                if episodes.is_ok() {
-                    let val = episodes.unwrap();
-                    let eps = val.first();
-
-                    if eps.is_none() {
-                        check = "✖";
-                    }
-                } else {
-                    check = "✖";
-                }
-            }
-        }
-
-        s.freeze(
-            check,
-            format!(" {}", provider,),
-            if check.eq("✔") {
-                Color::Green
-            } else {
-                Color::Red
-            },
-            None,
         );
         s.text(" Testing ...");
     }

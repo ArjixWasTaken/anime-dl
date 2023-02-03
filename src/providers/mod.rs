@@ -36,8 +36,13 @@ macro_rules! provider_api {
     };
 }
 
+#[rustfmt::skip]
 provider_api!(search, query, Vec<SearchResult>);
-#[rustfmt::skip]
 provider_api!(get_episodes, anime_url, Vec<AnimeEpisode>);
-#[rustfmt::skip]
-provider_api!(get_streams, episode_url, (Vec<StreamLink>, Vec<SubtitleTrack>));
+provider_api!(test_episodes, anime_url, (i32, i32));
+provider_api!(get_test_url, index, String);
+provider_api!(
+    get_streams,
+    episode_url,
+    (Vec<StreamLink>, Vec<SubtitleTrack>)
+);

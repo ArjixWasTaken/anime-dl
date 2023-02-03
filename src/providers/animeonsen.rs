@@ -17,8 +17,8 @@ lazy_static! {
     static ref EP_REGEX: Regex = Regex::new(r#"animeonsen.xyz/watch/(.+?)\?episode=(\d+)"#).unwrap();
 }
 
-const host: &str = "animeonsen.xyz";
-
+pub const host: &str = "animeonsen.xyz";
+pub const test_episodes_link: &str = "https://www.animeonsen.xyz/details/d5eRZVtbu86Kwy7E";
 // python code on how to get the api token:
 /*
 import httpx
@@ -51,6 +51,7 @@ print(authorization)
 const api_authentication_header: &str = "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImRlZmF1bHQifQ.eyJpc3MiOiJodHRwczovL2F1dGguYW5pbWVvbnNlbi54eXovIiwiYXVkIjoiaHR0cHM6Ly9hcGkuYW5pbWVvbnNlbi54eXoiLCJpYXQiOjE2NzQzMzAzMTMsImV4cCI6MTY3NDkzNTExMywic3ViIjoiMDZkMjJiOTYtNjNlNy00NmE5LTgwZmMtZGM0NDFkNDFjMDM4LmNsaWVudCIsImF6cCI6IjA2ZDIyYjk2LTYzZTctNDZhOS04MGZjLWRjNDQxZDQxYzAzOCIsImd0eSI6ImNsaWVudF9jcmVkZW50aWFscyJ9.otxwq_uP-rUM4ufgcvX4EHgtCaVSOTyHZsfhI8qKHY7uIMySeouMc1ktjRR_9VHYiaNAIla-l3NyPlK2Y1KpiOKs3UFow3O98vQHoCaJHX01V6hWFip2hII7lUkr1Q-qc67udJgz5NQ0UKz-xOKM3DCI8uF3SSPT-gIvWPJYQ9zT5loPGmuCKYrtWfUmzFxa43Vtpj5ZlETQ-FXMU3Zd7IAJ-5HfGTPegm1Zky_-6d7zoKo6it96KnMzmfUWef7yux5Ll2PY7H-B00AUXUOerZYra345CsRX74CpTOiN063lMKEo1yKRu9xVnlkOHDzO3IDLRuC4bAsVNtrjZKer9g";
 
 // Since all network calls are cached, we don't care about caching the individual tokens.
+// Note: the above statement is invalid, for some fucking reason animeonsen isn't cached, that might be due to some headers.
 pub async fn get_search_token(client: &ClientWithMiddleware) -> Result<String> {
     let res = client
         .get(format!("https://www.{}", host))
@@ -186,6 +187,18 @@ pub async fn get_episodes(args: (&ClientWithMiddleware, &str)) -> Result<Vec<Ani
 
     episodes.sort_by(|a, b| a.ep_num.partial_cmp(&b.ep_num).unwrap());
     Ok(episodes)
+}
+
+pub async fn get_test_url(args: (&ClientWithMiddleware, &str)) -> Result<String> {
+    match args.1 {
+        "0" => Ok(test_episodes_link.to_string()),
+        _ => bail!("Out of bounds."),
+    }
+}
+
+pub async fn test_episodes(args: (&ClientWithMiddleware, &str)) -> Result<(i32, i32)> {
+    let eps = get_episodes(args).await?;
+    Ok((eps.len().try_into().unwrap(), 13))
 }
 
 pub async fn get_streams(

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, bail, Result};
 use lazy_static::lazy_static;
 use regex::Regex;
 use reqwest::{header::HeaderValue, Client, Response};
@@ -19,6 +19,7 @@ lazy_static! {
 }
 
 const host: &str = "yugen.to";
+pub const test_episodes_link: &str = "https://yugen.to/anime/1428/overlord/";
 
 pub async fn search(args: (&ClientWithMiddleware, &str)) -> Result<Vec<SearchResult>> {
     let (client, query) = args;
@@ -119,6 +120,18 @@ pub async fn get_episodes(args: (&ClientWithMiddleware, &str)) -> Result<Vec<Ani
     }
 
     Ok(episodes)
+}
+
+pub async fn get_test_url(args: (&ClientWithMiddleware, &str)) -> Result<String> {
+    match args.1 {
+        "0" => Ok(test_episodes_link.to_string()),
+        _ => bail!("Out of bounds."),
+    }
+}
+
+pub async fn test_episodes(args: (&ClientWithMiddleware, &str)) -> Result<(i32, i32)> {
+    let eps = get_episodes(args).await?;
+    Ok((eps.len().try_into().unwrap(), 13))
 }
 
 pub async fn get_streams(
