@@ -54,6 +54,7 @@ pub async fn command(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -> Re
             not_found_episodes
         ));
     }
+    crate::terminal::debug(format!("Episodes chosen: {:?}", episodes));
 
     for episode in episodes {
         let Ok((streams, subtitles)) = providers::get_streams(client, provider, episode.url.as_str()).await else {

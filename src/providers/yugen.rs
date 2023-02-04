@@ -80,6 +80,7 @@ pub async fn get_episodes(args: (&ClientWithMiddleware, &str)) -> Result<Vec<Ani
                     .attr("title")
                     .unwrap()
                     .replacen(&format!("{} :", ep_num), "", 1)
+                    .replace("None", "")
                     .trim()
                     .to_string(),
                 url: format!("https://{}{}", host, element.value().attr("href").unwrap()),
