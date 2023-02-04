@@ -19,6 +19,7 @@ lazy_static! {
 
 pub const host: &str = "animeonsen.xyz";
 pub const test_episodes_link: &str = "https://www.animeonsen.xyz/details/d5eRZVtbu86Kwy7E";
+pub const test_streams_link: &str = "https://animeonsen.xyz/watch/d5eRZVtbu86Kwy7E?episode=1";
 
 // Since all network calls are cached, we don't care about caching the individual tokens.
 // Note: the above statement is invalid, for some fucking reason animeonsen isn't cached, that might be due to some headers.
@@ -180,6 +181,7 @@ pub async fn get_episodes(args: (&ClientWithMiddleware, &str)) -> Result<Vec<Ani
 pub async fn get_test_url(args: (&ClientWithMiddleware, &str)) -> Result<String> {
     match args.1 {
         "0" => Ok(test_episodes_link.to_string()),
+        "1" => Ok(test_streams_link.to_string()),
         _ => bail!("Out of bounds."),
     }
 }
@@ -247,6 +249,10 @@ pub async fn get_streams(
         .unwrap_or_default();
 
     Ok((vec![stream], subs))
+}
+
+pub async fn test_streams(args: (&ClientWithMiddleware, &str)) -> Result<usize> {
+    Ok(get_streams(args).await?.0.len())
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

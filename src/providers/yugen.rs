@@ -20,6 +20,7 @@ lazy_static! {
 
 const host: &str = "yugen.to";
 pub const test_episodes_link: &str = "https://yugen.to/anime/1428/overlord/";
+pub const test_streams_link: &str = "https://yugen.to/watch/1428/overlord/1/";
 
 pub async fn search(args: (&ClientWithMiddleware, &str)) -> Result<Vec<SearchResult>> {
     let (client, query) = args;
@@ -125,6 +126,7 @@ pub async fn get_episodes(args: (&ClientWithMiddleware, &str)) -> Result<Vec<Ani
 pub async fn get_test_url(args: (&ClientWithMiddleware, &str)) -> Result<String> {
     match args.1 {
         "0" => Ok(test_episodes_link.to_string()),
+        "1" => Ok(test_streams_link.to_string()),
         _ => bail!("Out of bounds."),
     }
 }
@@ -139,7 +141,7 @@ pub async fn get_streams(
 ) -> Result<(Vec<StreamLink>, Vec<SubtitleTrack>)> {
     let (client, url) = args;
 
-    let res: String = client.get(format!("{}", url)).send().await?.text().await?;
+    let res: String = client.get(url).send().await?.text().await?;
 
     let html = Html::parse_document(res.as_str());
     let selector: Selector = Selector::parse("[id=\"main-embed\"]").unwrap();
@@ -194,6 +196,10 @@ pub async fn get_streams(
     });
 
     Ok((streams, vec![]))
+}
+
+pub async fn test_streams(args: (&ClientWithMiddleware, &str)) -> Result<usize> {
+    Ok(get_streams(args).await?.0.len())
 }
 
 #[derive(Debug, Serialize, Deserialize)]
