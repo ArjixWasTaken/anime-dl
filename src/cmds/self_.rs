@@ -1,15 +1,13 @@
+use crate::types::SearchResult;
 use anyhow::{anyhow, bail, Result};
 use clap::{ArgMatches, SubCommand};
 use reqwest_middleware::ClientWithMiddleware;
+use spinach::{Color, Spinach};
 use term_painter::{
     Attr::Plain,
     Color::{Cyan, Yellow},
     ToStyle,
 };
-
-use spinach::{Color, Spinach};
-
-use crate::types::SearchResult;
 
 pub async fn update(args: &ArgMatches<'_>) -> Result<()> {
     // TODO: Use the jaemk/self_update crate to implement this.
@@ -34,17 +32,18 @@ pub async fn test_search(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -
 
         let search = crate::providers::search(client, provider, query).await;
         if search.is_ok() {
-            let num = search.unwrap().len().to_string();
+            let num = search.unwrap().len();
+            let snum = num.to_string();
             s.freeze(
                 "✔",
                 format!(
                     " {}{}[ {} search results ]",
                     provider,
                     " ".repeat((padding - &provider.len() + 1)),
-                    if num.len() < 2 {
-                        " ".to_string() + &num
+                    if snum.len() < 2 {
+                        " ".to_string() + &snum
                     } else {
-                        num
+                        snum
                     },
                 ),
                 None,
@@ -68,22 +67,41 @@ pub async fn test_episodes(client: &ClientWithMiddleware) -> Result<()> {
     let s = Spinach::new(" Testing ...");
     s.color(Color::Green);
 
-    // TODO: Actually implement this...
-
     for provider in crate::cli::PROVIDERS {
         s.text(format!(" Testing {}", provider));
 
-        let search = crate::providers::search(client, provider, "overlord").await;
-        s.freeze(
-            if search.is_ok() { "✔" } else { "✖" },
-            format!(" {}", provider,),
-            if search.is_ok() {
-                Color::Green
-            } else {
-                Color::Red
-            },
-            None,
-        );
+        // Note: this doesnt need to be async, but changing it would require rewriting the macro...
+        let url = crate::providers::get_test_url(client, provider, "0").await?;
+        let episodes = crate::providers::test_episodes(client, provider, &url).await;
+
+        let mut check = "✖";
+        let mut color = Color::Red;
+        let mut details: String = String::new();
+
+        match episodes {
+            Ok((found, expected)) => {
+                if found == expected {
+                    check = "✔";
+                    color = Color::Green;
+                }
+
+                let sfound = {
+                    let s = found.to_string();
+                    let lpad = expected.to_string().len() - s.len();
+                    " ".repeat(lpad).to_string() + &s
+                };
+
+                details = format!(
+                    "{}[ {} out of {} eps ]",
+                    " ".repeat(padding - provider.len() + 1),
+                    Plain.fg(term_painter::Color::Green).paint(sfound),
+                    Plain.fg(term_painter::Color::Green).paint(expected)
+                );
+            }
+            _ => (),
+        }
+
+        s.freeze(check, format!(" {}{}", provider, details), color, None);
         s.text(" Testing ...");
     }
     s.stop_with("", "", None);
@@ -99,22 +117,35 @@ pub async fn test_streams(client: &ClientWithMiddleware) -> Result<()> {
     let s = Spinach::new(" Testing ...");
     s.color(Color::Green);
 
-    // TODO: Actually implement this...
-
     for provider in crate::cli::PROVIDERS {
         s.text(format!(" Testing {}", provider));
 
-        let search = crate::providers::search(client, provider, "overlord").await;
-        s.freeze(
-            if search.is_ok() { "✔" } else { "✖" },
-            format!(" {}", provider,),
-            if search.is_ok() {
-                Color::Green
-            } else {
-                Color::Red
-            },
-            None,
-        );
+        // Note: this doesnt need to be async, but changing it would require rewriting the macro...
+        let url = crate::providers::get_test_url(client, provider, "1").await?;
+        let streams = crate::providers::test_streams(client, provider, &url).await;
+
+        let mut check = "✖";
+        let mut color = Color::Red;
+        let mut details: String = String::new();
+
+        match streams {
+            Ok(found) => {
+                if found > 0 {
+                    check = "✔";
+                    color = Color::Green;
+                }
+
+                details = format!(
+                    "{}[ found {} stream{} ]",
+                    " ".repeat(padding - provider.len() + 1),
+                    Plain.fg(term_painter::Color::Green).paint(found),
+                    if found != 1 { "s" } else { " " }
+                );
+            }
+            _ => (),
+        }
+
+        s.freeze(check, format!(" {}{}", provider, details), color, None);
         s.text(" Testing ...");
     }
     s.stop_with("", "", None);
