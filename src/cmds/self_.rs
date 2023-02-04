@@ -136,9 +136,10 @@ pub async fn test_streams(client: &ClientWithMiddleware) -> Result<()> {
                 }
 
                 details = format!(
-                    "{}[ found {} streams ]",
+                    "{}[ found {} stream{} ]",
                     " ".repeat(padding - provider.len() + 1),
                     Plain.fg(term_painter::Color::Green).paint(found),
+                    if found != 1 { "s" } else { " " }
                 );
             }
             _ => (),
