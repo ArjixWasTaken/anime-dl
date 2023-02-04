@@ -8,7 +8,6 @@ use term_painter::{
 };
 
 use spinach::{Color, Spinach};
-use std::ops::Not;
 
 use crate::types::SearchResult;
 
@@ -54,7 +53,12 @@ pub async fn test_search(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -
                     None,
                 );
             } else {
-                s.freeze("✖", format!(" {} [ 0 search results ]", provider), Color::Red, None);
+                s.freeze(
+                    "✖",
+                    format!(" {} [ 0 search results ]", provider),
+                    Color::Red,
+                    None,
+                );
             }
         } else {
             s.freeze("✖", format!(" {}", provider), Color::Red, None);
@@ -105,9 +109,7 @@ pub async fn test_episodes(client: &ClientWithMiddleware) -> Result<()> {
                     Plain.fg(term_painter::Color::Green).paint(expected)
                 );
             }
-            Err(err) => {
-                println!("{:#?}", err);
-            }
+            _ => (),
         }
 
         s.freeze(check, format!(" {}{}", provider, details), color, None);
@@ -126,46 +128,14 @@ pub async fn test_streams(client: &ClientWithMiddleware) -> Result<()> {
     let s = Spinach::new(" Testing ...");
     s.color(Color::Green);
 
-    // TODO: Actually implement this...
-
     for provider in crate::cli::PROVIDERS {
         s.text(format!(" Testing {}", provider));
 
         let search = crate::providers::search(client, provider, "overlord").await;
-        );
+        s.freeze("✔", format!(" {}", provider), Color::Green, None);
         s.text(" Testing ...");
     }
-    s.stop_with("", "", None);
 
-    Ok(())
-}
-
-pub async fn test_streams(client: &ClientWithMiddleware) -> Result<()> {
-    println!("{}", Plain.bold().paint("Fetching streams:"));
-
-    let padding = crate::cli::PROVIDERS.iter().map(|x| x.len()).max().unwrap();
-
-    let s = Spinach::new(" Testing ...");
-    s.color(Color::Green);
-
-    // TODO: Actually implement this...
-
-    for provider in crate::cli::PROVIDERS {
-        s.text(format!(" Testing {}", provider));
-
-        let search = crate::providers::search(client, provider, "overlord").await;
-        s.freeze(
-            if search.is_ok() { "✔" } else { "✖" },
-            format!(" {}", provider,),
-            if search.is_ok() {
-                Color::Green
-            } else {
-                Color::Red
-            },
-            None,
-        );
-        s.text(" Testing ...");
-    }
     s.stop_with("", "", None);
 
     Ok(())
