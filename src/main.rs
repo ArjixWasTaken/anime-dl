@@ -67,7 +67,7 @@ async fn main() {
     let matches = app.clone().get_matches();
 
     let retry_policy = ExponentialBackoff::builder().build_with_max_retries(3);
-    let client = ClientBuilder::new(
+    let mut client = ClientBuilder::new(
         reqwest::ClientBuilder::new()
             .default_headers( reqwest::header::HeaderMap::from_iter(vec![(
                 USER_AGENT,
@@ -76,13 +76,18 @@ async fn main() {
         )
         .build().unwrap()
     )
-        .with(RetryTransientMiddleware::new_with_policy(retry_policy))
-        .with(Cache(HttpCache {
+        .with(RetryTransientMiddleware::new_with_policy(retry_policy));
+
+    if matches.subcommand_name() != Some("self") {
+        // we don't want to use cache for self subcommands
+        client = client.with(Cache(HttpCache {
             mode: CacheMode::ForceCache,
             manager: CACacheManager::default(),
             options: None,
-        }))
-        .build();
+        }));
+    }
+
+    let client = client.build();
 
     unsafe {
         crate::terminal::VERBOSITY = matches.occurrences_of("verbose");
