@@ -19,6 +19,7 @@ extern crate urlencoding;
 
 mod cli;
 mod cmds;
+mod config;
 mod extractors;
 mod m3u8;
 mod providers;
@@ -26,17 +27,18 @@ mod terminal;
 mod types;
 mod utils;
 
+use anyhow::Result;
 use http_cache_reqwest::{CACacheManager, Cache, CacheMode, HttpCache};
 use reqwest::header::USER_AGENT;
 use reqwest_middleware::ClientBuilder;
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
 
 macro_rules! exec_cmd {
-    ($cmd:ident, $client:expr, $args:expr) => {
+    ($cmd:ident, $config:expr, $client:expr, $args:expr) => {
         {
             let cmd_str = stringify!($cmd).replace("_", "");
             crate::terminal::debug(format!("Executing the '{}' subcommand.", cmd_str));
-            match crate::cmds::$cmd::command(&$client, $args).await {
+            match crate::cmds::$cmd::command(&$config, &$client, $args).await {
                 Ok(_) => (),
                 Err(error) => match error.to_string().as_str() {
                     "NoEpisodesFound" | "NoSearchResults" => (/* The error is known and has already been logged. */),
@@ -57,11 +59,11 @@ macro_rules! exec_cmd {
 
 #[tokio::main]
 async fn main() {
+    #[rustfmt::skip]
     ctrlc::set_handler(|| {
         spinach::term::show_cursor();
         std::process::exit(0);
-    })
-    .expect("Error setting Ctrl-C handler");
+    }).expect("Error setting Ctrl-C handler");
 
     let mut app = cli::build_cli();
     let matches = app.clone().get_matches();
@@ -88,15 +90,20 @@ async fn main() {
     }
 
     let client = client.build();
+    let config = crate::config::Config::read().unwrap();
 
     unsafe {
         crate::terminal::VERBOSITY = matches.occurrences_of("verbose");
+        if crate::terminal::VERBOSITY == 0 {
+            crate::terminal::VERBOSITY = config.verbosity;
+        }
     }
 
     match matches.subcommand() {
-        ("dl", Some(args)) => exec_cmd!(dl, client, args),
-        ("watch", Some(args)) => exec_cmd!(watch, client, args),
-        ("self", Some(args)) => exec_cmd!(self_, client, args),
+        ("dl", Some(args)) => exec_cmd!(dl, config, client, args),
+        ("watch", Some(args)) => exec_cmd!(watch, config, client, args),
+        ("self", Some(args)) => exec_cmd!(self_, config, client, args),
+        ("print_config", Some(args)) => exec_cmd!(print_cfg, config, client, args),
         _ => (),
     }
 }

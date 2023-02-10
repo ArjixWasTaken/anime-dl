@@ -104,6 +104,8 @@ pub fn build_cli() -> App<'static, 'static> {
                                 .help("The anime to search for."),
                         ),
                 ]),
+            SubCommand::with_name("print_config")
+
         ])
         .arg(
             Arg::with_name("verbose")

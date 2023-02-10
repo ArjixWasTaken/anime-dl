@@ -37,6 +37,7 @@ lazy_static = "1.4.0"
 cookie = { version = "0.17.0" }
 urlencoding = "2.1.2"
 base64 = "0.21.0"
+serde_yaml = "0.9.17"
 
 [build-dependencies]
 clap = "2"

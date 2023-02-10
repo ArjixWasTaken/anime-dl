@@ -168,7 +168,11 @@ pub async fn test(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -> Resul
     Ok(())
 }
 
-pub async fn command(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -> Result<()> {
+pub async fn command(
+    config: &crate::config::Config,
+    client: &ClientWithMiddleware,
+    args: &ArgMatches<'_>,
+) -> Result<()> {
     match args.subcommand() {
         ("update", Some(sub_args)) => update(sub_args).await?,
         ("test", Some(sub_args)) => test(client, sub_args).await?,

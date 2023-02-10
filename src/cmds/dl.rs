@@ -6,7 +6,11 @@ use crate::providers;
 use crate::types::SearchResult;
 use crate::utils::search_results_to_table;
 
-pub async fn command(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -> Result<()> {
+pub async fn command(
+    config: &crate::config::Config,
+    client: &ClientWithMiddleware,
+    args: &ArgMatches<'_>,
+) -> Result<()> {
     let provider = args.value_of("provider").unwrap();
     let choice = args
         .value_of("choice")
