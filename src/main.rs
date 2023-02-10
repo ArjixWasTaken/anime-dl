@@ -90,7 +90,7 @@ async fn main() {
     }
 
     let client = client.build();
-    let config = crate::config::Config::read().unwrap();
+    let mut config = crate::config::Config::load().expect("Failed to read/generate the config.");
 
     unsafe {
         crate::terminal::VERBOSITY = matches.occurrences_of("verbose");

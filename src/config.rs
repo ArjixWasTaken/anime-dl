@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Result};
-use std::path::Path;
+use std::{env::current_exe, path::Path};
 
 use serde::{Deserialize, Serialize};
 
@@ -56,9 +56,10 @@ impl Default for Config {
 
 impl Config {
     #[rustfmt::skip]
-    pub fn read() -> Result<Self> {
-        use std::env::current_exe;
-        let default_cfg = Config::default();
+    pub fn load() -> Result<Self> {
+        let selfd = Self::default();
+        // hacky way to make read() available w/o an instance
+        // why selfd? because both self and Self are unavailable
 
         let exe = current_exe()?;
         let current_directory = exe
@@ -66,23 +67,44 @@ impl Config {
             .ok_or(anyhow!("Failed to get the parent directory of the executable; *This should never happen.*"))?
             .canonicalize()?;
 
-        if current_directory.join("config.yml").exists() {
-            let config = std::fs::read_to_string(current_directory.join("config.yml"))?;
-            let config: Config = serde_yaml::from_str(&config).unwrap_or_else(|err| {
-                crate::terminal::error(format!("Failed to parse the config file, reason: {}", err.to_string()));
-                Config::default()
-            });
 
-            return Ok(config);
-        }
+        Ok(match std::fs::read_to_string(current_directory.join("config.yml")) {
+            Ok(config) => {
+                let config: Config = serde_yaml::from_str(&config).unwrap_or_else(|err| {
+                    crate::terminal::error(format!("Failed to parse the config file, reason: {}", err.to_string()));
+                    selfd
+                });
 
-        crate::terminal::info("No config file found, creating a new one.");
-        std::fs::write(current_directory.join("config.yml"), serde_yaml::to_string(&default_cfg).unwrap())?;
+                config
+            }
+            Err(err) => {
+                match err.kind() {
+                    std::io::ErrorKind::NotFound => {
+                        crate::terminal::info("No config file found, creating a new one.");
+                        selfd.save()?;
+                    }
+                    _ => {
+                        crate::terminal::error(format!("Failed to read the config file, reason: {}", err.to_string()));
+                    }
 
-        Ok(default_cfg)
+                }
+                selfd
+            }
+            })
     }
 
-    pub fn write(&self) {
-        unimplemented!();
+    pub fn save(&self) -> Result<()> {
+        let exe = current_exe()?;
+        let current_directory = exe
+            .parent()
+            .ok_or(anyhow!(
+                "Failed to get the parent directory of the executable; *This should never happen.*"
+            ))?
+            .canonicalize()?;
+        std::fs::write(
+            current_directory.join("config.yml"),
+            serde_yaml::to_string(self).unwrap(),
+        )?;
+        Ok(())
     }
 }
