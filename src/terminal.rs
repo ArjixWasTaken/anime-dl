@@ -4,13 +4,13 @@ use term_painter::{
     ToStyle,
 };
 
-pub static mut VERBOSITY: u64 = 1;
+pub static mut VERBOSITY: u64 = 0;
 
 macro_rules! decl_log {
     ($level:ident, $color:ident, $debug_level:literal) => {
-        pub fn $level<S: AsRef<str>>(message: S) {
+        pub fn $level(message: impl ToString) {
             unsafe {
-                if VERBOSITY < $debug_level {
+                if VERBOSITY <= $debug_level {
                     return;
                 }
             }
@@ -19,7 +19,7 @@ macro_rules! decl_log {
                 println!(
                     "[{}]: {}",
                     stringify!($level).to_title_case(),
-                    message.as_ref()
+                    message.to_string()
                 )
             });
         }

@@ -58,33 +58,40 @@ impl Default for Config {
 }
 
 #[rustfmt::skip]
-fn find_config_file(filename: &str) -> Result<PathBuf> {
-    if let Ok(exe) = current_exe() {
-        let exe_dir = exe.parent().ok_or(anyhow!("Failed to get the parent directory of the executable; *This should never happen.*"))?;
-        let config_file = exe_dir.join(filename);
+fn find_config_file(filename: &str, check_exe_directory: bool) -> Result<PathBuf> {
+    if check_exe_directory {
+        if let Ok(exe) = current_exe() {
+            let exe_dir = exe.parent().ok_or(anyhow!("Failed to get the parent directory of the executable; *This should never happen.*"))?;
+            let config_file = exe_dir.join(filename);
 
-        if config_file.exists() {
-            return Ok(config_file);
+            // If a config file exists in the same directory as the executable, use that.
+            if config_file.exists() {
+                return Ok(config_file);
+            }
         }
     }
 
-    let config_folder = if cfg!(target_os = "linux") {
-        std::env::var("XDG_CONFIG_HOME")
-            .map(|x| Path::new(&x).to_path_buf())
-            .unwrap_or_else(|_| {
-                let home = std::env::var("HOME").unwrap_or_else(|_| {
-                    panic!("Failed to get the home directory, please set the XDG_CONFIG_HOME environment variable.")
-                });
-                Path::new(&home).join(".config")
-            })
-    } else if cfg!(target_os = "windows") {
-        std::env::var("USERPROFILE")
-            .map(|p| Path::new(&p).join(".config"))
-            .unwrap_or_else(|_| {
-                Path::new(&std::env::var("APPDATA").unwrap()).to_path_buf()
-            })
-    } else {
-        bail!("Unsupported operating system. {:?}", std::env::consts::OS);
+    let config_folder = match std::env::consts::OS {
+        "windows" => {
+            std::env::var("USERPROFILE") // AKA: C:/Users/%username%/
+                .map(|p| Path::new(&p).join(".config")) // AKA: C:/Users/%username%/.config
+                .unwrap_or_else(|_| {
+                    Path::new(&std::env::var("APPDATA").unwrap()).to_path_buf()
+                     // AKA: C:/Users/%username%/AppData/Roaming
+                     // I can't imagine a scenario where this fallback will be needed, but oh well.
+                })
+        },
+        "linux" | "macos" => {
+            std::env::var("XDG_CONFIG_HOME") // AKA: /home/%username%/.config
+                .map(|x| Path::new(&x).to_path_buf())
+                .unwrap_or_else(|_| {
+                    let home = std::env::var("HOME").unwrap_or_else(|_| {
+                        panic!("Failed to get the home directory, please set the XDG_CONFIG_HOME environment variable.")
+                    });
+                    Path::new(&home).join(".config")
+                })
+        },
+        _ => bail!("Unsupported operating system. {:?}", std::env::consts::OS),
     }.join("anime-dl");
 
     Ok(config_folder.join(filename))
@@ -95,7 +102,7 @@ impl Config {
     pub fn load() -> Result<Self> {
         let self_ = Self::default();
 
-        let config_file = find_config_file("config.yml")?;
+        let config_file = find_config_file("config.yml", true)?;
 
         Ok(match std::fs::read_to_string(config_file) {
             Ok(config) => {
@@ -123,12 +130,32 @@ impl Config {
     }
 
     pub fn save(&self) -> Result<()> {
-        let config_file = find_config_file("config.yml")?;
+        let mut config_file = find_config_file("config.yml", true)?;
+
         if !config_file.parent().unwrap().exists() {
+            // Lets hope this never fails...
             std::fs::create_dir_all(config_file.parent().unwrap())?;
         }
 
-        std::fs::write(config_file, serde_yaml::to_string(self).unwrap())?;
+        match std::fs::write(config_file, serde_yaml::to_string(self).unwrap()) {
+            Err(err) => match err.kind() {
+                std::io::ErrorKind::PermissionDenied => {
+                    config_file = find_config_file("config.yml", false)?;
+
+                    if !config_file.parent().unwrap().exists() {
+                        // Lets hope this never fails...
+                        std::fs::create_dir_all(config_file.parent().unwrap())?;
+                    }
+
+                    std::fs::write(config_file, serde_yaml::to_string(self).unwrap())?;
+                }
+                _ => {
+                    #[rustfmt::skip]
+                    bail!("Failed to write to the config file, reason: {}", err.to_string());
+                }
+            },
+            _ => {}
+        }
         Ok(())
     }
 }

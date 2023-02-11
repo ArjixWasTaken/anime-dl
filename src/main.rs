@@ -93,9 +93,9 @@ async fn main() {
     let mut config = crate::config::Config::load().expect("Failed to read/generate the config.");
 
     unsafe {
-        crate::terminal::VERBOSITY = matches.occurrences_of("verbose");
-        if crate::terminal::VERBOSITY == 0 {
-            crate::terminal::VERBOSITY = config.verbosity;
+        match matches.occurrences_of("verbose") {
+            0 => crate::terminal::VERBOSITY = config.verbosity,
+            level => crate::terminal::VERBOSITY = level,
         }
     }
 
