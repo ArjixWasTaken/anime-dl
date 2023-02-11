@@ -103,9 +103,9 @@ pub fn build_cli() -> App<'static, 'static> {
                                 .default_value("Overlord")
                                 .help("The anime to search for."),
                         ),
+                    SubCommand::with_name("config")
+                        .about("An interactive interface to directly modify the config."),
                 ]),
-            SubCommand::with_name("print_config")
-
         ])
         .arg(
             Arg::with_name("verbose")

@@ -9,7 +9,7 @@ use term_painter::{
     ToStyle,
 };
 
-pub async fn update(args: &ArgMatches<'_>) -> Result<()> {
+pub async fn update(config: &crate::config::Config, args: &ArgMatches<'_>) -> Result<()> {
     // TODO: Use the jaemk/self_update crate to implement this.
     bail!("Whine about it, lul.")
 }
@@ -153,7 +153,11 @@ pub async fn test_streams(client: &ClientWithMiddleware) -> Result<()> {
     Ok(())
 }
 
-pub async fn test(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -> Result<()> {
+pub async fn test(
+    client: &ClientWithMiddleware,
+    config: &crate::config::Config,
+    args: &ArgMatches<'_>,
+) -> Result<()> {
     println!(
         "\nTesting {} the providers...\n",
         Cyan.paint(crate::cli::PROVIDERS.len()),
@@ -168,14 +172,40 @@ pub async fn test(client: &ClientWithMiddleware, args: &ArgMatches<'_>) -> Resul
     Ok(())
 }
 
+pub async fn config_(
+    client: &ClientWithMiddleware,
+    config: &crate::config::Config,
+    args: &ArgMatches<'_>,
+) -> Result<()> {
+    // !! Temporary code !!
+    // [@ArjixWasTaken] Hey @Amanse,
+    // I won't tell you much, but I want this to be generic,
+    // use serde to serialise and deserialise the config,
+    // that way you can iterate over all the struct fields
+    // I don't want a config command that needs updating whenever the config changes, if you get what I'm saying.
+
+    println!(
+        "{}\n{}",
+        Plain
+            .fg(term_painter::Color::BrightCyan)
+            .paint("Current config:"),
+        Plain
+            .fg(term_painter::Color::BrightGreen)
+            .paint(serde_yaml::to_string(&config)?),
+    );
+
+    Ok(())
+}
+
 pub async fn command(
     config: &crate::config::Config,
     client: &ClientWithMiddleware,
     args: &ArgMatches<'_>,
 ) -> Result<()> {
     match args.subcommand() {
-        ("update", Some(sub_args)) => update(sub_args).await?,
-        ("test", Some(sub_args)) => test(client, sub_args).await?,
+        ("update", Some(sub_args)) => update(config, sub_args).await?,
+        ("test", Some(sub_args)) => test(client, config, sub_args).await?,
+        ("config", Some(sub_args)) => config_(client, config, sub_args).await?,
         _ => (),
     }
 

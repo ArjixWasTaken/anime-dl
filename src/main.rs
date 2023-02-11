@@ -103,7 +103,6 @@ async fn main() {
         ("dl", Some(args)) => exec_cmd!(dl, config, client, args),
         ("watch", Some(args)) => exec_cmd!(watch, config, client, args),
         ("self", Some(args)) => exec_cmd!(self_, config, client, args),
-        ("print_config", Some(args)) => exec_cmd!(print_cfg, config, client, args),
         _ => (),
     }
 }
