@@ -1,5 +1,8 @@
-use anyhow::{anyhow, Result};
-use std::{env::current_exe, path::Path};
+use anyhow::{anyhow, bail, Result};
+use std::{
+    env::current_exe,
+    path::{Path, PathBuf},
+};
 
 use serde::{Deserialize, Serialize};
 
@@ -54,25 +57,51 @@ impl Default for Config {
     }
 }
 
+#[rustfmt::skip]
+fn find_config_file(filename: &str) -> Result<PathBuf> {
+    if let Ok(exe) = current_exe() {
+        let exe_dir = exe.parent().ok_or(anyhow!("Failed to get the parent directory of the executable; *This should never happen.*"))?;
+        let config_file = exe_dir.join(filename);
+
+        if config_file.exists() {
+            return Ok(config_file);
+        }
+    }
+
+    let config_folder = if cfg!(target_os = "linux") {
+        std::env::var("XDG_CONFIG_HOME")
+            .map(|x| Path::new(&x).to_path_buf())
+            .unwrap_or_else(|_| {
+                let home = std::env::var("HOME").unwrap_or_else(|_| {
+                    panic!("Failed to get the home directory, please set the XDG_CONFIG_HOME environment variable.")
+                });
+                Path::new(&home).join(".config")
+            })
+    } else if cfg!(target_os = "windows") {
+        std::env::var("USERPROFILE")
+            .map(|p| Path::new(&p).join(".config"))
+            .unwrap_or_else(|_| {
+                Path::new(&std::env::var("APPDATA").unwrap()).to_path_buf()
+            })
+    } else {
+        bail!("Unsupported operating system. {:?}", std::env::consts::OS);
+    }.join("anime-dl");
+
+    Ok(config_folder.join(filename))
+}
+
 impl Config {
     #[rustfmt::skip]
     pub fn load() -> Result<Self> {
-        let selfd = Self::default();
-        // hacky way to make read() available w/o an instance
-        // why selfd? because both self and Self are unavailable
+        let self_ = Self::default();
 
-        let exe = current_exe()?;
-        let current_directory = exe
-            .parent()
-            .ok_or(anyhow!("Failed to get the parent directory of the executable; *This should never happen.*"))?
-            .canonicalize()?;
+        let config_file = find_config_file("config.yml")?;
 
-
-        Ok(match std::fs::read_to_string(current_directory.join("config.yml")) {
+        Ok(match std::fs::read_to_string(config_file) {
             Ok(config) => {
                 let config: Config = serde_yaml::from_str(&config).unwrap_or_else(|err| {
                     crate::terminal::error(format!("Failed to parse the config file, reason: {}", err.to_string()));
-                    selfd
+                    self_
                 });
 
                 config
@@ -81,30 +110,25 @@ impl Config {
                 match err.kind() {
                     std::io::ErrorKind::NotFound => {
                         crate::terminal::info("No config file found, creating a new one.");
-                        selfd.save()?;
+                        self_.save()?;
                     }
                     _ => {
                         crate::terminal::error(format!("Failed to read the config file, reason: {}", err.to_string()));
                     }
 
                 }
-                selfd
+                self_
             }
             })
     }
 
     pub fn save(&self) -> Result<()> {
-        let exe = current_exe()?;
-        let current_directory = exe
-            .parent()
-            .ok_or(anyhow!(
-                "Failed to get the parent directory of the executable; *This should never happen.*"
-            ))?
-            .canonicalize()?;
-        std::fs::write(
-            current_directory.join("config.yml"),
-            serde_yaml::to_string(self).unwrap(),
-        )?;
+        let config_file = find_config_file("config.yml")?;
+        if !config_file.parent().unwrap().exists() {
+            std::fs::create_dir_all(config_file.parent().unwrap())?;
+        }
+
+        std::fs::write(config_file, serde_yaml::to_string(self).unwrap())?;
         Ok(())
     }
 }
