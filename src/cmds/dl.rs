@@ -2,6 +2,7 @@ use anyhow::{anyhow, bail, Result};
 use clap::ArgMatches;
 use reqwest_middleware::ClientWithMiddleware;
 
+use crate::m3u8::M3u8Stream;
 use crate::providers;
 use crate::types::SearchResult;
 use crate::utils::search_results_to_table;
@@ -67,15 +68,22 @@ pub async fn command(
 
     crate::terminal::debug(format!("Streams for '{}': {:?}", single_ep.url, streams));
 
-    println!("Streams: {:#?}", streams?.0);
-    // let stream = streams?
-    //     .0
-    //     .iter()
-    //     .find(|x| x.title == "HLS")
-    //     .unwrap()
-    //     .clone();
+    let stream = streams?
+        .0
+        .iter()
+        .find(|x| x.title == "HLS")
+        .unwrap()
+        .clone();
 
-    // crate::m3u8::extract_streams(client, stream.url, stream.headers);
+    let m3u8_stream = M3u8Stream {
+        url: stream.url,
+        quality: None,
+        resolution: None,
+        headers: stream.headers,
+    };
+
+    let m3u8_qualities = crate::m3u8::extract_streams(client, m3u8_stream, None).await;
+    dbg!(m3u8_qualities);
 
     Ok(())
 }
