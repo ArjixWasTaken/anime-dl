@@ -4,7 +4,9 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use bevy_reflect::Reflect;
 use serde::{Deserialize, Serialize};
+use std::any::Any;
 
 macro_rules! decl_default {
     ($name:ident, $value:expr) => {
@@ -19,8 +21,26 @@ decl_default!(default_file_format, "{anime_title}/{episode_title}_{episode_numbe
 decl_default!(default_provider, crate::cli::PROVIDERS.first().unwrap());
 decl_default!(default_path, ".");
 
-#[derive(Serialize, Deserialize)]
-pub struct DlCmdConfig {
+//#[derive(Serialize, Deserialize, fake_reflect::hello_world,Clone)]
+//pub struct DlCmdConfig {
+//    #[serde(default = "default_path")]
+//    download_directory: String,
+//    #[serde(default = "default_file_format")]
+//    file_format: String,
+////    #[serde(default = "default_provider")]
+////    default_provider: String,
+//}
+//
+//#[derive(Serialize, Deserialize,fake_reflect::hello_world,Clone)]
+//pub struct CommandsConfig {
+//    pub dl: DlCmdConfig,
+//}
+
+#[derive(Serialize, Deserialize, fake_reflect::hello_world, Clone)]
+pub struct Config {
+    pub check_for_updates: bool,
+    pub verbosity: u64,
+    //pub commands: CommandsConfig,
     #[serde(default = "default_path")]
     download_directory: String,
     #[serde(default = "default_file_format")]
@@ -29,30 +49,14 @@ pub struct DlCmdConfig {
     default_provider: String,
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct CommandsConfig {
-    pub dl: DlCmdConfig,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct Config {
-    pub check_for_updates: bool,
-    pub verbosity: u64,
-    pub commands: CommandsConfig,
-}
-
 impl Default for Config {
     fn default() -> Self {
         Self {
             check_for_updates: true,
             verbosity: 0,
-            commands: CommandsConfig {
-                dl: DlCmdConfig {
-                    download_directory: default_path(),
-                    file_format: default_file_format(),
-                    default_provider: default_provider(),
-                },
-            },
+            download_directory: default_path(),
+            file_format: default_file_format(),
+            default_provider: default_provider()
         }
     }
 }
