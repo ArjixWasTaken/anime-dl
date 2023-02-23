@@ -41,6 +41,7 @@ base64 = "0.21.0"
 serde_yaml = "0.9.17"
 bevy_reflect = "0.9.1"
 dialoguer = "0.10.3"
+serde-aux = "4.1.2"
 
 [build-dependencies]
 clap = "2"

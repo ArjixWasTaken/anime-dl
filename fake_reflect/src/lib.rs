@@ -54,33 +54,6 @@ fn impl_hello_world(ast: DeriveInput) -> TokenStream {
                 }
             }
 
-//            fn update_bool(&mut self, field: impl ToString, val: bool) {
-//                match field.to_string().as_str() {
-//                    #(
-//                        stringify!(#field_name4) => {self.#field_name5 = val;}
-//                     )*
-//                }
-//            }
-
-          //  pub fn update<T: Any>(self, field: impl ToString, val: &T) -> anyhow::Result<Self> {
-          //      let val = val as &dyn Any;
-          //      match val.downcast_ref::<bool>() {
-          //          Some(v) => {println!("{}", v);},
-          //          None => {println!("not bool");}
-          //      }
-          //      Ok(self)
-                //match field.to_string().as_str() {
-                //    #(
-                //        stringify!(#field_name4) => {
-                //            let mut new = self.clone();
-                //            new.#field_name5 = val;
-                //            Ok(new)
-                //        },
-                //     )*
-                //    _ => Err(anyhow::anyhow!("Unknown field.")),
-                //}
-           // }
-           //
            pub fn update(self, field: impl ToString, val: &str) -> Result<Self> {
                match field.to_string().as_str() {
                     #(

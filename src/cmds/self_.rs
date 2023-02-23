@@ -1,18 +1,15 @@
 use crate::types::SearchResult;
 use anyhow::{anyhow, bail, Result};
-use bevy_reflect::{GetField, Struct, Reflect, GetPath};
 use clap::{ArgMatches, SubCommand};
 use reqwest_middleware::ClientWithMiddleware;
+use serde::{Deserialize, Serialize};
+use serde_aux::serde_introspection;
 use spinach::{Color, Spinach};
 use term_painter::{
     Attr::Plain,
     Color::{Cyan, Yellow},
     ToStyle,
 };
-use serde::{Serialize, Deserialize};
-use serde_yaml::Value;
-
-use std::collections::BTreeMap;
 
 pub async fn update(config: &crate::config::Config, args: &ArgMatches<'_>) -> Result<()> {
     // TODO: Use the jaemk/self_update crate to implement this.
@@ -189,34 +186,21 @@ pub async fn config_(
     // that way you can iterate over all the struct fields
     // I don't want a config command that needs updating whenever the config changes, if you get what I'm saying.
     //
-    //------ code for bevy reflect and ser
-//    let mut new_rules = config.clone();
-//    *new_rules.get_field_mut("check_for_updates").unwrap() = false;
-//    let config: Value = serde_yaml::to_value(&config).unwrap();
-//    let new_rules: Value = serde_yaml::to_value(&new_rules).unwrap();
-//    let mut fields: Vec<String> = vec![];
-//    let mut config: BTreeMap<String, Value> = serde_yaml::from_value(config.clone()).unwrap();
-//    for (k,v) in config.clone() {
-//        fields.push(k);
-//    }
-//
-//    let selection = dialoguer::Select::new()
-//        .items(&fields)
-//        .default(0)
-//        .interact_on_opt(&dialoguer::console::Term::stderr()).unwrap();
-//
-//    let field_to_c = new_rules.field(fields[selection])?;
-//
-//    //match field_to_c.TypeId or TypeInfo to get input for specific type of fields and then update
-//    
-//    let new_rules: BTreeMap<String, Value> = serde_yaml::from_value(new_rules.clone())?;
-//    for (k, v) in new_rules {
-//        config.insert(k, v);
-//    }
-//
-//    ------- code for fake_reflect
+    //
+    let fields = serde_introspection::serde_introspect::<crate::config::Config>();
 
-    let new = config.clone().update("check_for_updates", &"false")?;
+    let selection = dialoguer::Select::new()
+        .items(&fields)
+        .default(0)
+        .interact_opt()
+        .unwrap()
+        .unwrap();
+
+    let new_val: String = dialoguer::Input::new().interact_text().unwrap();
+
+    let new = config
+        .clone()
+        .update(fields[selection], new_val.as_str())?;
 
     println!(
         "{}\n{}",

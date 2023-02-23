@@ -4,7 +4,6 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use bevy_reflect::Reflect;
 use serde::{Deserialize, Serialize};
 use std::any::Any;
 
@@ -42,11 +41,11 @@ pub struct Config {
     pub verbosity: u64,
     //pub commands: CommandsConfig,
     #[serde(default = "default_path")]
-    download_directory: String,
+    pub download_directory: String,
     #[serde(default = "default_file_format")]
-    file_format: String,
+    pub file_format: String,
     #[serde(default = "default_provider")]
-    default_provider: String,
+    pub default_provider: String,
 }
 
 impl Default for Config {
