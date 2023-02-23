@@ -22,11 +22,11 @@ decl_default!(default_path, ".");
 #[derive(Serialize, Deserialize)]
 pub struct DlCmdConfig {
     #[serde(default = "default_path")]
-    download_directory: String,
+    pub download_directory: String,
     #[serde(default = "default_file_format")]
-    file_format: String,
+    pub file_format: String,
     #[serde(default = "default_provider")]
-    default_provider: String,
+    pub default_provider: String,
 }
 
 #[derive(Serialize, Deserialize)]

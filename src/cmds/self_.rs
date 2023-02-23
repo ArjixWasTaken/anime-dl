@@ -2,6 +2,8 @@ use crate::types::SearchResult;
 use anyhow::{anyhow, bail, Result};
 use clap::{ArgMatches, SubCommand};
 use reqwest_middleware::ClientWithMiddleware;
+use serde::{Deserialize, Serialize};
+use serde_aux::serde_introspection;
 use spinach::{Color, Spinach};
 use term_painter::{
     Attr::Plain,
@@ -183,6 +185,22 @@ pub async fn config_(
     // use serde to serialise and deserialise the config,
     // that way you can iterate over all the struct fields
     // I don't want a config command that needs updating whenever the config changes, if you get what I'm saying.
+    //
+    //
+    let fields = serde_introspection::serde_introspect::<crate::config::Config>();
+
+    let selection = dialoguer::Select::new()
+        .items(&fields)
+        .default(0)
+        .interact_opt()
+        .unwrap()
+        .unwrap();
+
+    let new_val: String = dialoguer::Input::new().interact_text().unwrap();
+
+    let new = config
+        .clone()
+        .update(fields[selection], new_val.as_str())?;
 
     println!(
         "{}\n{}",
