@@ -1,6 +1,7 @@
 use crate::types::SearchResult;
 use anyhow::{anyhow, bail, Result};
 use clap::{ArgMatches, SubCommand};
+use difference::{Changeset, Difference};
 use reqwest_middleware::ClientWithMiddleware;
 use serde::{Deserialize, Serialize};
 use serde_aux::serde_introspection;
@@ -11,8 +12,6 @@ use term_painter::{
     Color::{Cyan, Yellow},
     ToStyle,
 };
-use difference::{Difference, Changeset};
-
 
 pub async fn update(config: &crate::config::Config, args: &ArgMatches<'_>) -> Result<()> {
     // TODO: Use the jaemk/self_update crate to implement this.
@@ -192,36 +191,54 @@ pub async fn config_(
     //
     let fields = serde_introspection::serde_introspect::<crate::config::Config>();
 
-    let selection = dialoguer::Select::new()
-        .items(&fields)
-        .default(0)
-        .interact_opt()
-        .unwrap()
-        .unwrap();
+    let mut new = config.clone();
 
-    let new_val: String = {
-        match config.get(fields[selection]) {
-            Ok(v) =>  {
-                if v == TypeId::of::<bool>() {
-                    let c = dialoguer::Confirm::new().with_prompt(fields[selection].clone()).interact().unwrap();
-                    if c {
-                        "true".to_string()
-                    } else {
-                        "false".to_string()
-                    }
-                } else  {
-                    dialoguer::Input::new().with_prompt(fields[selection].clone()).interact_text().unwrap()
-                } 
-            },
-            Err(_) => {
-                panic!("bithc");
-            }
+    loop {
+        let selection = dialoguer::Select::new()
+            .items(&fields)
+            .item("Exit")
+            .default(0)
+            .interact_opt()
+            .unwrap()
+            .unwrap();
+
+        if selection == fields.len() {
+            break;
         }
-    };
 
-    let new = config.clone().update(fields[selection], new_val.as_str())?;
+        let new_val: String = {
+            match config.get(fields[selection]) {
+                Ok(v) => {
+                    if v == TypeId::of::<bool>() {
+                        let c = dialoguer::Confirm::new()
+                            .with_prompt(fields[selection].clone())
+                            .interact()
+                            .unwrap();
+                        if c {
+                            "true".to_string()
+                        } else {
+                            "false".to_string()
+                        }
+                    } else {
+                        dialoguer::Input::new()
+                            .with_prompt(fields[selection].clone())
+                            .interact_text()
+                            .unwrap()
+                    }
+                }
+                Err(_) => {
+                    panic!("bithc");
+                }
+            }
+        };
 
-    show_diff(serde_yaml::to_string(&config)?, serde_yaml::to_string(&new)?);
+        new = new.clone().update(fields[selection], new_val.as_str())?;
+    }
+
+    show_diff(
+        serde_yaml::to_string(&config)?,
+        serde_yaml::to_string(&new)?,
+    );
 
     println!(
         "{}\n{}",
