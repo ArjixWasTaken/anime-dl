@@ -11,6 +11,8 @@ use term_painter::{
     Color::{Cyan, Yellow},
     ToStyle,
 };
+use difference::{Difference, Changeset};
+
 
 pub async fn update(config: &crate::config::Config, args: &ArgMatches<'_>) -> Result<()> {
     // TODO: Use the jaemk/self_update crate to implement this.
@@ -219,6 +221,8 @@ pub async fn config_(
 
     let new = config.clone().update(fields[selection], new_val.as_str())?;
 
+    show_diff(serde_yaml::to_string(&config)?, serde_yaml::to_string(&new)?);
+
     println!(
         "{}\n{}",
         Plain
@@ -234,6 +238,31 @@ pub async fn config_(
 
 fn type_id<T: 'static + ?Sized>(_: &T) -> TypeId {
     TypeId::of::<T>()
+}
+
+fn show_diff(text1: String, text2: String) {
+    let Changeset { diffs, .. } = Changeset::new(text1.as_str(), text2.as_str(), "\n");
+
+    let mut t = term::stdout().unwrap();
+
+    for i in 0..diffs.len() {
+        match diffs[i] {
+            Difference::Same(ref x) => {
+                t.reset().unwrap();
+                writeln!(t, " {}", x);
+            }
+            Difference::Add(ref x) => {
+                t.fg(term::color::GREEN).unwrap();
+                writeln!(t, "+{}", x);
+            }
+            Difference::Rem(ref x) => {
+                t.fg(term::color::RED).unwrap();
+                writeln!(t, "-{}", x);
+            }
+        }
+    }
+    t.reset().unwrap();
+    t.flush().unwrap();
 }
 
 pub async fn command(

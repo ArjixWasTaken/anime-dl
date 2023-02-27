@@ -33,6 +33,9 @@ dependencies = [
  "cookie",
  "cruet",
  "ctrlc",
+ "dialoguer",
+ "difference",
+ "fake_reflect",
  "hls_m3u8",
  "http-cache-reqwest",
  "lazy_static",
@@ -720,6 +723,24 @@ dependencies = [
  "rustc_version",
  "syn",
 ]
+
+[[package]]
+name = "dialoguer"
+version = "0.10.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "af3c796f3b0b408d9fd581611b47fa850821fcb84aa640b83a3c1a5be2d691f2"
+dependencies = [
+ "console",
+ "shell-words",
+ "tempfile",
+ "zeroize",
+]
+
+[[package]]
+name = "difference"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "524cbf6897b527295dff137cec09ecf3a05f4fddffd7dfcd1585403449e74198"
 
 [[package]]
 name = "digest"
