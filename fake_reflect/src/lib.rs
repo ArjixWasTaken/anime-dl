@@ -6,7 +6,6 @@ extern crate quote;
 
 use proc_macro::TokenStream;
 use syn::{Data, DataStruct, DeriveInput, Fields, Ident};
-use std::any::Any;
 
 fn impl_hello_world(ast: DeriveInput) -> TokenStream {
     let name = &ast.ident;
@@ -38,6 +37,9 @@ fn impl_hello_world(ast: DeriveInput) -> TokenStream {
 
     TokenStream::from(quote! {
         //#ast
+        fn type_id<T: 'static + ?Sized>(_: &T) -> TypeId {
+            TypeId::of::<T>()
+        }
         pub enum #enum_name {
             #(
                 #field_name(#field_type),
@@ -45,10 +47,10 @@ fn impl_hello_world(ast: DeriveInput) -> TokenStream {
         }
 
         impl #name {
-            pub fn get(&self, field: impl ToString) -> anyhow::Result<#enum_name> {
+            pub fn get(&self, field: impl ToString) -> anyhow::Result<std::any::TypeId> {
                 match field.to_string().as_str() {
                     #(
-                        stringify!(#field_name2) => Ok(#enum_vars(self.#field_name3.clone())),
+                        stringify!(#field_name2) => Ok(type_id(&self.#field_name7)),
                     )*
                     _ => Err(anyhow::anyhow!("Unknown field.")),
                 }
@@ -69,6 +71,8 @@ fn impl_hello_world(ast: DeriveInput) -> TokenStream {
         }
     })
 }
+
+
 
 #[proc_macro_derive(hello_world)]
 pub fn hello_world(input: TokenStream) -> TokenStream {

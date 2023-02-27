@@ -5,6 +5,7 @@ use reqwest_middleware::ClientWithMiddleware;
 use serde::{Deserialize, Serialize};
 use serde_aux::serde_introspection;
 use spinach::{Color, Spinach};
+use std::any::TypeId;
 use term_painter::{
     Attr::Plain,
     Color::{Cyan, Yellow},
@@ -196,11 +197,27 @@ pub async fn config_(
         .unwrap()
         .unwrap();
 
-    let new_val: String = dialoguer::Input::new().interact_text().unwrap();
+    let new_val: String = {
+        match config.get(fields[selection]) {
+            Ok(v) =>  {
+                if v == TypeId::of::<bool>() {
+                    let c = dialoguer::Confirm::new().with_prompt(fields[selection].clone()).interact().unwrap();
+                    if c {
+                        "true".to_string()
+                    } else {
+                        "false".to_string()
+                    }
+                } else  {
+                    dialoguer::Input::new().with_prompt(fields[selection].clone()).interact_text().unwrap()
+                } 
+            },
+            Err(_) => {
+                panic!("bithc");
+            }
+        }
+    };
 
-    let new = config
-        .clone()
-        .update(fields[selection], new_val.as_str())?;
+    let new = config.clone().update(fields[selection], new_val.as_str())?;
 
     println!(
         "{}\n{}",
@@ -213,6 +230,10 @@ pub async fn config_(
     );
 
     Ok(())
+}
+
+fn type_id<T: 'static + ?Sized>(_: &T) -> TypeId {
+    TypeId::of::<T>()
 }
 
 pub async fn command(
