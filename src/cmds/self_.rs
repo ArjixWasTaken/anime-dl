@@ -1,6 +1,7 @@
 use crate::types::SearchResult;
 use anyhow::{anyhow, bail, Result};
 use clap::{ArgMatches, SubCommand};
+use dialoguer::Confirm;
 use difference::{Changeset, Difference};
 use reqwest_middleware::ClientWithMiddleware;
 use serde::{Deserialize, Serialize};
@@ -196,7 +197,7 @@ pub async fn config_(
     loop {
         let selection = dialoguer::Select::new()
             .items(&fields)
-            .item("Exit")
+            .item("Save")
             .default(0)
             .interact_opt()
             .unwrap()
@@ -239,6 +240,11 @@ pub async fn config_(
         serde_yaml::to_string(&config)?,
         serde_yaml::to_string(&new)?,
     );
+
+    let c = Confirm::new().with_prompt("Save this config?").interact_opt().unwrap().unwrap();
+    if c {
+        new.save();
+    }
 
     println!(
         "{}\n{}",
