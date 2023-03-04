@@ -12,6 +12,7 @@ name = "anime"
 path = "src/main.rs"
 
 [dependencies]
+fake_reflect = { path = "fake_reflect" }
 clap = "2"
 term = "0.5"
 reqwest = { version = "0.11.13", features = [ "json" ] }
@@ -38,6 +39,10 @@ cookie = { version = "0.17.0" }
 urlencoding = "2.1.2"
 base64 = "0.21.0"
 serde_yaml = "0.9.17"
+bevy_reflect = "0.9.1"
+dialoguer = "0.10.3"
+serde-aux = "4.1.2"
+difference = "2.0.0"
 
 [build-dependencies]
 clap = "2"
