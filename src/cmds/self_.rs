@@ -253,7 +253,7 @@ pub async fn config_(
             .paint("Current config:"),
         Plain
             .fg(term_painter::Color::BrightGreen)
-            .paint(serde_yaml::to_string(&config)?),
+            .paint(serde_yaml::to_string(&new)?),
     );
 
     Ok(())
