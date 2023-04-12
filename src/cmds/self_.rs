@@ -1,8 +1,13 @@
 use crate::types::SearchResult;
 use anyhow::{anyhow, bail, Result};
 use clap::{ArgMatches, SubCommand};
+use dialoguer::Confirm;
+use difference::{Changeset, Difference};
 use reqwest_middleware::ClientWithMiddleware;
+use serde::{Deserialize, Serialize};
+use serde_aux::serde_introspection;
 use spinach::{Color, Spinach};
+use std::any::TypeId;
 use term_painter::{
     Attr::Plain,
     Color::{Cyan, Yellow},
@@ -177,12 +182,66 @@ pub async fn config_(
     config: &crate::config::Config,
     args: &ArgMatches<'_>,
 ) -> Result<()> {
-    // !! Temporary code !!
-    // [@ArjixWasTaken] Hey @Amanse,
-    // I won't tell you much, but I want this to be generic,
-    // use serde to serialise and deserialise the config,
-    // that way you can iterate over all the struct fields
-    // I don't want a config command that needs updating whenever the config changes, if you get what I'm saying.
+    let fields = serde_introspection::serde_introspect::<crate::config::Config>();
+
+    let mut new = config.clone();
+    let theme = dialoguer::theme::ColorfulTheme::default();
+
+    loop {
+        let selection = dialoguer::Select::with_theme(&theme)
+            .items(&fields)
+            .item("-- Done --")
+            .default(0)
+            .interact_opt()
+            .unwrap()
+            .unwrap();
+
+        if selection == fields.len() {
+            break;
+        }
+
+        let new_val: String = {
+            match config.get(fields[selection]) {
+                Ok(v) => {
+                    if v == TypeId::of::<bool>() {
+                        let c = dialoguer::Confirm::with_theme(&theme)
+                            .with_prompt(fields[selection].clone())
+                            .interact()
+                            .unwrap();
+                        if c {
+                            "true".to_string()
+                        } else {
+                            "false".to_string()
+                        }
+                    } else {
+                        dialoguer::Input::with_theme(&theme)
+                            .with_prompt(fields[selection].clone())
+                            .interact_text()
+                            .unwrap()
+                    }
+                }
+                Err(_) => {
+                    panic!("bithc");
+                }
+            }
+        };
+
+        new = new.clone().update(fields[selection], new_val.as_str())?;
+    }
+
+    show_diff(
+        serde_yaml::to_string(&config)?,
+        serde_yaml::to_string(&new)?,
+    );
+
+    let c = Confirm::new()
+        .with_prompt("Save this config?")
+        .interact_opt()
+        .unwrap()
+        .unwrap();
+    if c {
+        new.save();
+    }
 
     println!(
         "{}\n{}",
@@ -191,10 +250,39 @@ pub async fn config_(
             .paint("Current config:"),
         Plain
             .fg(term_painter::Color::BrightGreen)
-            .paint(serde_yaml::to_string(&config)?),
+            .paint(serde_yaml::to_string(&new)?),
     );
 
     Ok(())
+}
+
+fn type_id<T: 'static + ?Sized>(_: &T) -> TypeId {
+    TypeId::of::<T>()
+}
+
+fn show_diff(text1: String, text2: String) {
+    let Changeset { diffs, .. } = Changeset::new(text1.as_str(), text2.as_str(), "\n");
+
+    let mut t = term::stdout().unwrap();
+
+    for i in 0..diffs.len() {
+        match diffs[i] {
+            Difference::Same(ref x) => {
+                t.reset().unwrap();
+                writeln!(t, " {}", x);
+            }
+            Difference::Add(ref x) => {
+                t.fg(term::color::GREEN).unwrap();
+                writeln!(t, "+{}", x);
+            }
+            Difference::Rem(ref x) => {
+                t.fg(term::color::RED).unwrap();
+                writeln!(t, "-{}", x);
+            }
+        }
+    }
+    t.reset().unwrap();
+    t.flush().unwrap();
 }
 
 pub async fn command(
