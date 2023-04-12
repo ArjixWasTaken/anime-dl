@@ -47,10 +47,10 @@ dependencies = [
  "ctrlc",
  "dialoguer",
  "difference",
- "fake_reflect",
  "hls_m3u8",
  "http-cache-reqwest",
  "lazy_static",
+ "reflect",
  "regex",
  "reqwest",
  "reqwest-middleware",
@@ -962,14 +962,6 @@ name = "fake-simd"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e88a8acf291dafb59c2d96e8f59828f3838bb1a70398823ade51a84de6a6deed"
-
-[[package]]
-name = "fake_reflect"
-version = "0.1.0"
-dependencies = [
- "quote 0.6.13",
- "syn 0.15.44",
-]
 
 [[package]]
 name = "fastrand"
@@ -2150,6 +2142,14 @@ dependencies = [
  "getrandom 0.2.8",
  "redox_syscall 0.2.16",
  "thiserror",
+]
+
+[[package]]
+name = "reflect"
+version = "0.1.0"
+dependencies = [
+ "quote 0.6.13",
+ "syn 0.15.44",
 ]
 
 [[package]]

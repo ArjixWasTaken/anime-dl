@@ -7,7 +7,7 @@ extern crate quote;
 use proc_macro::TokenStream;
 use syn::{Data, DataStruct, DeriveInput, Fields, Ident};
 
-fn impl_hello_world(ast: DeriveInput) -> TokenStream {
+fn impl_reflect(ast: DeriveInput) -> TokenStream {
     let name = &ast.ident;
 
     let fields = match &ast.data {
@@ -20,20 +20,18 @@ fn impl_hello_world(ast: DeriveInput) -> TokenStream {
 
     let field_name = fields.iter().map(|field| &field.ident);
     let field_name2 = field_name.clone();
-    let field_name3 = field_name.clone();
     let field_name4 = field_name.clone();
     let field_name5 = field_name.clone();
-    let field_name6 = field_name.clone();
     let field_name7 = field_name.clone();
 
     let field_type = fields.iter().map(|field| &field.ty);
 
     let enum_name = syn::parse_str::<Ident>(&format!("{}_field", name.to_string())).unwrap();
 
-    let enum_vars = fields.iter().map(|field| {
-        syn::parse_str::<syn::Path>(&format!("{}::{}", enum_name, field.ident.as_ref().unwrap()))
-            .unwrap()
-    });
+    // let enum_vars = fields.iter().map(|field| {
+    //     syn::parse_str::<syn::Path>(&format!("{}::{}", enum_name, field.ident.as_ref().unwrap()))
+    //         .unwrap()
+    // });
 
     TokenStream::from(quote! {
         //#ast
@@ -72,13 +70,11 @@ fn impl_hello_world(ast: DeriveInput) -> TokenStream {
     })
 }
 
-
-
-#[proc_macro_derive(hello_world)]
-pub fn hello_world(input: TokenStream) -> TokenStream {
+#[proc_macro_derive(reflect)]
+pub fn reflect(input: TokenStream) -> TokenStream {
     // Parse the string representation
     let ast = syn::parse_macro_input!(input as DeriveInput);
 
     // Build and return the generated impl
-    impl_hello_world(ast)
+    impl_reflect(ast)
 }

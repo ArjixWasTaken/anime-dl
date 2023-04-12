@@ -30,7 +30,7 @@ decl_default!(default_path, ".");
 //    pub dl: DlCmdConfig,
 //}
 
-#[derive(Serialize, Deserialize, fake_reflect::hello_world, Clone)]
+#[derive(Serialize, Deserialize, reflect::reflect, Clone)]
 pub struct Config {
     pub check_for_updates: bool,
     pub verbosity: u64,
