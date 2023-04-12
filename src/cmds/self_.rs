@@ -182,22 +182,15 @@ pub async fn config_(
     config: &crate::config::Config,
     args: &ArgMatches<'_>,
 ) -> Result<()> {
-    // !! Temporary code !!
-    // [@ArjixWasTaken] Hey @Amanse,
-    // I won't tell you much, but I want this to be generic,
-    // use serde to serialise and deserialise the config,
-    // that way you can iterate over all the struct fields
-    // I don't want a config command that needs updating whenever the config changes, if you get what I'm saying.
-    //
-    //
     let fields = serde_introspection::serde_introspect::<crate::config::Config>();
 
     let mut new = config.clone();
+    let theme = dialoguer::theme::ColorfulTheme::default();
 
     loop {
-        let selection = dialoguer::Select::new()
+        let selection = dialoguer::Select::with_theme(&theme)
             .items(&fields)
-            .item("Save")
+            .item("-- Done --")
             .default(0)
             .interact_opt()
             .unwrap()
@@ -211,7 +204,7 @@ pub async fn config_(
             match config.get(fields[selection]) {
                 Ok(v) => {
                     if v == TypeId::of::<bool>() {
-                        let c = dialoguer::Confirm::new()
+                        let c = dialoguer::Confirm::with_theme(&theme)
                             .with_prompt(fields[selection].clone())
                             .interact()
                             .unwrap();
@@ -221,7 +214,7 @@ pub async fn config_(
                             "false".to_string()
                         }
                     } else {
-                        dialoguer::Input::new()
+                        dialoguer::Input::with_theme(&theme)
                             .with_prompt(fields[selection].clone())
                             .interact_text()
                             .unwrap()
@@ -241,7 +234,11 @@ pub async fn config_(
         serde_yaml::to_string(&new)?,
     );
 
-    let c = Confirm::new().with_prompt("Save this config?").interact_opt().unwrap().unwrap();
+    let c = Confirm::new()
+        .with_prompt("Save this config?")
+        .interact_opt()
+        .unwrap()
+        .unwrap();
     if c {
         new.save();
     }
